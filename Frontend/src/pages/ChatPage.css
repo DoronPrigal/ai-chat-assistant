@@ -234,6 +234,19 @@
   box-shadow: 0 0 0 1px var(--color-primary), var(--shadow);
 }
 
+/* מצב בהיר בלבד: שורת הקלט בולטת יותר מהרקע, כי היא הפעולה הראשית במסך */
+:root[data-theme="light"] .chat-input {
+  background: var(--input-bg);
+  border-color: var(--input-border);
+  box-shadow: var(--input-shadow);
+}
+
+/* בפוקוס: טבעת בכחול הים (המסגרת ועוד קו של 1px = 2px) */
+:root[data-theme="light"] .chat-input:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary), var(--input-shadow);
+}
+
 .chat-input textarea {
   flex: 1;
   min-width: 0;
