@@ -21,6 +21,10 @@
   --glass-border: rgba(43, 38, 34, 0.1);
   --shadow: 0 8px 30px rgba(50, 38, 25, 0.14);
   --backdrop: rgba(43, 38, 34, 0.45);
+  /* שורת הקלט במצב בהיר: כרטיס בהיר מעל הרקע. המסגרת ב-3:1 מול הרקע */
+  --input-bg: #eae3d7;
+  --input-border: #827563;
+  --input-shadow: 0 1px 3px rgba(50, 38, 25, 0.1), 0 10px 28px rgba(50, 38, 25, 0.16);
 
   /* סולם מרווחים */
   --space-1: 4px;
