@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import ThemeToggle from "./ThemeToggle";
-import { SidebarIcon } from "./Icons";
+import { PlusIcon, SidebarIcon } from "./Icons";
 
 interface Props {
   sidebarOpen: boolean;
@@ -24,7 +24,12 @@ export default function Header({ sidebarOpen, onToggleSidebar }: Props) {
         <SidebarIcon />
       </button>
 
-      <Link to="/" className="brand">
+      {/* "שיחה חדשה" זמין תמיד, גם כשסרגל השיחות מוסתר */}
+      <Link to="/" className="icon-button" aria-label="New chat" title="New chat">
+        <PlusIcon />
+      </Link>
+
+      <Link to="/" className="brand" aria-label="AI Chat – home">
         <img src="/favicon.svg" alt="" width={28} height={28} />
         <span className="brand-name">AI Chat</span>
       </Link>

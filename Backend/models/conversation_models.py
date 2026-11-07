@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -11,7 +12,7 @@ class MessageCreate(BaseModel):
 class MessageOut(BaseModel):
     id: int
     conversation_id: int
-    role: str
+    role: Literal["user", "assistant"]
     content: str
     image_path: str | None = None
     created_at: datetime
