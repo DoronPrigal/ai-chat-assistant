@@ -31,6 +31,7 @@
   /* כפתור ראשי עם טקסט לבן (4.5:1 לפחות) */
   --button-primary-bg: #1f4d64;
   --button-primary-hover: #173b4d;
+  --logo-accent: #256b61; /* הניצוץ בלוגו */
 
   /* סולם מרווחים */
   --space-1: 4px;
@@ -92,6 +93,7 @@
   --field-border: #73788a;
   --button-primary-bg: #4f46e5;
   --button-primary-hover: #4338ca;
+  --logo-accent: #8b85ff;
 
   color-scheme: dark;
 }
