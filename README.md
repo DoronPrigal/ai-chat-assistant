@@ -75,7 +75,7 @@ Open http://localhost:5173 (the Backend must be running on port 8000).
 
 ## API endpoints
 
-All `/api/conversations` endpoints require `Authorization: Bearer <token>` and work only on the logged-in user's conversations (another user's conversation returns 404).
+All `/api/conversations` and `/api/uploads` endpoints require `Authorization: Bearer <token>`. Conversations are scoped to the logged-in user (another user's conversation returns 404).
 
 | Method | Path | Description |
 |---|---|---|
@@ -86,13 +86,24 @@ All `/api/conversations` endpoints require `Authorization: Bearer <token>` and w
 | GET | `/api/conversations` | List conversations, newest first |
 | POST | `/api/conversations` | Start a conversation with its first message (created only after the agent answers) |
 | GET | `/api/conversations/{id}` | A conversation with all its messages |
-| POST | `/api/conversations/{id}/messages` | Send a message and get the agent's reply |
-| DELETE | `/api/conversations/{id}` | Delete a conversation and its messages |
+| POST | `/api/conversations/{id}/messages` | Send a message (text and/or `image_path`) and get the agent's reply |
+| DELETE | `/api/conversations/{id}` | Delete a conversation, its messages and its image files |
+| POST | `/api/uploads` | Upload an image (PNG, JPEG, WebP or GIF, up to 5 MB), returns its `image_path` |
+| GET | `/uploads/{file}` | The image file itself (random, unguessable file names) |
+
+## The AI agent
+
+A LangGraph ReAct loop (`agent` node + `tools` node) in `Backend/agent/`:
+- **Chat model:** `gpt-6-luna` (OpenAI), the last 20 messages of the conversation are sent as context.
+- **Vision:** an attached image is sent to the model together with the text, so you can ask about it.
+- **Tools:** `get_current_datetime`, and `generate_image` – creates an image with `gpt-image-1-mini` (1024×1024, low quality, about half a cent per image) when the user asks to draw something.
+
+Images are stored as files in `Backend/uploads/` (not in Git); the database stores only their path.
 
 ## Database design
 
 - `users` – registered users. Passwords are stored only as bcrypt hashes.
 - `conversations` – one row per chat (`id` is the unique conversation id), owned by a user (`user_id`).
-- `messages` – every message, with `role` (`user` / `assistant`) and `conversation_id`.
+- `messages` – every message, with `role` (`user` / `assistant`), `conversation_id`, and an optional `image_path` (an image the user attached or the agent created).
 
 Deleting a user deletes their conversations, and deleting a conversation deletes its messages (`ON DELETE CASCADE`).

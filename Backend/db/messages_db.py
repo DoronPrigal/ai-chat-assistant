@@ -30,6 +30,20 @@ def get_last_messages(conversation_id, limit):
     return messages
 
 
+def get_image_paths(conversation_id):
+    """נתיבי כל התמונות בשיחה (כדי למחוק את הקבצים כשמוחקים את השיחה)."""
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute(
+        "SELECT image_path FROM messages WHERE conversation_id = %s AND image_path IS NOT NULL",
+        (conversation_id,),
+    )
+    paths = [row["image_path"] for row in cursor.fetchall()]
+    cursor.close()
+    conn.close()
+    return paths
+
+
 def add_message(conversation_id, role, content, image_path=None):
     """שומר הודעה ומעדכן את זמן העדכון של השיחה (למיון רשימת השיחות)."""
     conn = get_db()
