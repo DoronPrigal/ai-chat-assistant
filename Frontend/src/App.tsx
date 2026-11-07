@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 
 import {
-  clearToken, deleteConversation, getConversations, getMe, getToken, saveToken, setUnauthorizedHandler,
+  ApiError, clearToken, deleteConversation, getConversations, getMe, getToken, saveToken, setUnauthorizedHandler,
 } from "./api";
 import type { AuthResponse, Conversation, User } from "./api";
 import { useIsMobile } from "./useIsMobile";
@@ -38,6 +38,9 @@ export default function App() {
   // המשתמש המחובר. אם יש טוקן שמור, מחכים לבדיקה מול השרת לפני שמציגים מסך.
   const [user, setUser] = useState<User | null>(null);
   const [authChecked, setAuthChecked] = useState(() => getToken() === null);
+  const [startupError, setStartupError] = useState("");
+  // האם המשתמש נותק כי הטוקן פג (כדי להציג הודעה במסך ההתחברות)
+  const [sessionExpired, setSessionExpired] = useState(false);
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [listError, setListError] = useState("");
@@ -54,8 +57,9 @@ export default function App() {
     if (getToken() === null) return;
     getMe()
       .then(setUser)
-      .catch(() => {
-        // 401 מטופל ב-setUnauthorizedHandler. בשגיאה אחרת פשוט מציגים התחברות.
+      .catch((error) => {
+        // 401 מטופל ב-setUnauthorizedHandler. כשהשרת לא זמין מציגים הודעה, ולא מנתקים בשקט.
+        if (error instanceof ApiError && error.status === 0) setStartupError(error.message);
       })
       .finally(() => setAuthChecked(true));
   }, []);
@@ -66,7 +70,9 @@ export default function App() {
       clearToken();
       setUser(null);
       setConversations([]);
-      navigate("/login", { state: { expired: true } });
+      setSessionExpired(true);
+      // שומרים את הדף הנוכחי, כדי לחזור אליו אחרי ההתחברות
+      navigate("/login", { state: { from: window.location.pathname } });
     });
   }, [navigate]);
 
@@ -87,10 +93,12 @@ export default function App() {
   function handleAuthenticated(data: AuthResponse) {
     saveToken(data.access_token);
     setUser(data.user);
+    setSessionExpired(false);
   }
 
   function handleLogout() {
     clearToken();
+    setSessionExpired(false);
     setUser(null);
     setConversations([]);
     setMobileOpen(false);
@@ -121,6 +129,18 @@ export default function App() {
   // עד שהבדיקה של הטוקן מסתיימת לא מציגים כלום (לוקח רגע), כדי שלא יהבהב מסך ההתחברות
   if (!authChecked) return null;
 
+  // השרת לא זמין בכניסה לאתר: הודעה ברורה עם אפשרות לנסות שוב
+  if (startupError) {
+    return (
+      <main className="startup-error">
+        <div className="error-box" role="alert">
+          <span>{startupError}</span>
+          <button type="button" className="button-secondary" onClick={() => window.location.reload()}>Try again</button>
+        </div>
+      </main>
+    );
+  }
+
   // מסך הצ'אט מוגן: בלי משתמש מחובר עוברים להתחברות, וזוכרים לאן רצו להגיע.
   // key={location.key}: כל ניווט (שיחה אחרת או "שיחה חדשה") פותח את מסך הצ'אט מחדש ונקי
   const chatPage = user ? (
@@ -129,8 +149,9 @@ export default function App() {
     <Navigate to="/login" replace state={{ from: location.pathname }} />
   );
 
-  // אחרי התחברות חוזרים לדף שהמשתמש רצה להגיע אליו
-  const afterLogin = (location.state as { from?: string } | null)?.from ?? "/";
+  // אחרי התחברות חוזרים לדף שהמשתמש רצה להגיע אליו (אבל לא שוב לדפי ההתחברות)
+  const from = (location.state as { from?: string } | null)?.from;
+  const afterLogin = from && from !== "/login" && from !== "/register" ? from : "/";
 
   return (
     <div className={sidebarOpen ? "app sidebar-open" : "app"}>
@@ -158,11 +179,11 @@ export default function App() {
           <Route path="/about" element={<AboutPage />} />
           <Route
             path="/login"
-            element={user ? <Navigate to={afterLogin} replace /> : <AuthPage key="login" mode="login" onAuthenticated={handleAuthenticated} />}
+            element={user ? <Navigate to={afterLogin} replace /> : <AuthPage key="login" mode="login" sessionExpired={sessionExpired} onAuthenticated={handleAuthenticated} />}
           />
           <Route
             path="/register"
-            element={user ? <Navigate to="/" replace /> : <AuthPage key="register" mode="register" onAuthenticated={handleAuthenticated} />}
+            element={user ? <Navigate to="/" replace /> : <AuthPage key="register" mode="register" sessionExpired={false} onAuthenticated={handleAuthenticated} />}
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

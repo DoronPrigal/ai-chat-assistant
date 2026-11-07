@@ -109,7 +109,9 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     } catch {
       // התשובה לא הייתה JSON, נשארים עם ההודעה הכללית
     }
-    if (response.status === 401 && token && handleUnauthorized) handleUnauthorized();
+    // 401 בהתחברות או בהרשמה הוא סיסמה שגויה, לא טוקן שפג תוקפו
+    const isLoginOrRegister = path === "/auth/login" || path === "/auth/register";
+    if (response.status === 401 && token && !isLoginOrRegister && handleUnauthorized) handleUnauthorized();
     throw new ApiError(message, response.status);
   }
 

@@ -15,6 +15,14 @@
   }
 }
 
+/* השרת לא זמין בטעינה */
+.startup-error {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: var(--space-4);
+}
+
 /* ===== כותרת עליונה ===== */
 .header {
   position: sticky;
