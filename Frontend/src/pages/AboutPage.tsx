@@ -20,16 +20,9 @@ export default function AboutPage() {
         <p>A ChatGPT-style assistant built from scratch as a Full Stack final project.</p>
       </header>
 
+      {/* סדר הכרטיסים: שורה 1 - עליי (רחב) והמערכת. שורה 2 - יכולות, איך זה עובד, טכנולוגיות */}
       <div className="bento">
-        <section className="card card-wide">
-          <h2>The system</h2>
-          <p>
-            AI Chat lets you hold real, ongoing conversations with an AI assistant. Every message is saved, so you can
-            start a new chat at any time, come back to an earlier one, and continue exactly where you stopped.
-          </p>
-        </section>
-
-        <section className="card card-me">
+        <section className="card card-wide card-me">
           <h2>About me</h2>
           <p className="me-name">{aboutMe.name}</p>
           <p className="me-role">{aboutMe.role}</p>
@@ -41,12 +34,11 @@ export default function AboutPage() {
         </section>
 
         <section className="card">
-          <h2>Technologies</h2>
-          <ul className="chips">
-            {TECHNOLOGIES.map((tech) => (
-              <li key={tech}>{tech}</li>
-            ))}
-          </ul>
+          <h2>The system</h2>
+          <p>
+            AI Chat lets you hold real, ongoing conversations with an AI assistant. Every message is saved, so you can
+            start a new chat at any time, come back to an earlier one, and continue exactly where you stopped.
+          </p>
         </section>
 
         <section className="card">
@@ -67,6 +59,15 @@ export default function AboutPage() {
             <li>The answer is saved and shown in the chat</li>
           </ol>
           <a href={aboutMe.repoUrl} target="_blank" rel="noreferrer">View the code on GitHub</a>
+        </section>
+
+        <section className="card">
+          <h2>Technologies</h2>
+          <ul className="chips">
+            {TECHNOLOGIES.map((tech) => (
+              <li key={tech}>{tech}</li>
+            ))}
+          </ul>
         </section>
       </div>
     </div>
