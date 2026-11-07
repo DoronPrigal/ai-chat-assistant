@@ -34,6 +34,17 @@ def make_title(body):
     return " ".join(body.content.split())[:50] or "Image"
 
 
+def save_exchange(conversation_id, body, reply, generated_image):
+    """שומר את ההודעה ואת התשובה. אם השמירה נכשלה, מוחקים את התמונה שהסוכן יצר,
+    כדי שלא יישאר קובץ בלי הודעה."""
+    try:
+        return messages_db.add_exchange(conversation_id, body.content, body.image_path, reply, generated_image)
+    except Exception:
+        if generated_image:
+            delete_image(generated_image)
+        raise
+
+
 @router.get("", response_model=list[ConversationOut])
 def list_conversations(user: dict = Depends(get_current_user)):
     return conversations_db.get_conversations(user["id"])
@@ -44,10 +55,13 @@ def create_conversation(body: MessageCreate, user: dict = Depends(get_current_us
     """שיחה חדשה נוצרת רק עם ההודעה הראשונה, ורק אחרי שהסוכן ענה, כדי שלא יישארו שיחות ריקות."""
     reply, generated_image = ask_agent([], body)
 
-    conversation = conversations_db.create_conversation(user["id"], make_title(body))
-    user_message, assistant_message = messages_db.add_exchange(
-        conversation["id"], body.content, body.image_path, reply, generated_image
-    )
+    try:
+        conversation = conversations_db.create_conversation(user["id"], make_title(body))
+    except Exception:
+        if generated_image:
+            delete_image(generated_image)
+        raise
+    user_message, assistant_message = save_exchange(conversation["id"], body, reply, generated_image)
     return {"conversation": conversation, "user_message": user_message, "assistant_message": assistant_message}
 
 
@@ -74,7 +88,5 @@ def send_message(conversation_id: int, body: MessageCreate, user: dict = Depends
     history = messages_db.get_last_messages(conversation_id, HISTORY_LIMIT)
     reply, generated_image = ask_agent(history, body)
 
-    user_message, assistant_message = messages_db.add_exchange(
-        conversation_id, body.content, body.image_path, reply, generated_image
-    )
+    user_message, assistant_message = save_exchange(conversation_id, body, reply, generated_image)
     return {"user_message": user_message, "assistant_message": assistant_message}
