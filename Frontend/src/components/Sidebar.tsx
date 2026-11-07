@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Link, NavLink } from "react-router-dom";
 import type { Conversation } from "../api";
-import { PlusIcon, TrashIcon } from "./Icons";
+import { CloseIcon, PlusIcon, TrashIcon } from "./Icons";
 
 interface Props {
   open: boolean;
@@ -17,15 +17,20 @@ export default function Sidebar({ open, isMobile, conversations, error, onRetry,
   const newChatRef = useRef<HTMLAnchorElement>(null);
   const isDrawer = isMobile && open;
 
-  // בנייד: פוקוס לתוך המגירה כשהיא נפתחת, ו-Escape סוגר אותה
+  // בנייד: פוקוס לתוך המגירה כשהיא נפתחת, Escape סוגר אותה,
+  // ובסגירה הפוקוס חוזר לכפתור שפתח אותה
   useEffect(() => {
     if (!isDrawer) return;
+    const opener = document.activeElement as HTMLElement | null;
     newChatRef.current?.focus();
     const handleKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
     };
     document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("keydown", handleKey);
+      opener?.focus();
+    };
   }, [isDrawer, onClose]);
 
   // בנייד המגירה נסגרת אחרי בחירה. במחשב הסרגל נשאר פתוח.
@@ -36,10 +41,17 @@ export default function Sidebar({ open, isMobile, conversations, error, onRetry,
       {isDrawer && <div className="sidebar-backdrop" onClick={onClose} />}
 
       <aside id="sidebar" className={open ? "sidebar glass open" : "sidebar glass"} aria-label="Conversations" inert={!open}>
-        <Link to="/" className="new-chat-button" onClick={handleNavigate} ref={newChatRef}>
-          <PlusIcon />
-          New chat
-        </Link>
+        <div className="sidebar-top">
+          <Link to="/" className="new-chat-button" onClick={handleNavigate} ref={newChatRef}>
+            <PlusIcon />
+            New chat
+          </Link>
+          {isMobile && (
+            <button type="button" className="icon-button" onClick={onClose} aria-label="Close conversations">
+              <CloseIcon />
+            </button>
+          )}
+        </div>
 
         <h2 className="sidebar-heading">Recent</h2>
 

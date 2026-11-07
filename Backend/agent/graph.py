@@ -13,7 +13,8 @@ SYSTEM_PROMPT = SystemMessage(content=(
     "Keep answers short and clear. Use Markdown (lists, bold, code blocks) when it helps readability."
 ))
 
-# reasoning_effort="none": תשובה מהירה וזולה, וגם נדרש כדי שהמודל יוכל לקרוא לכלים
+# reasoning_effort="none": תשובה מהירה וזולה. לפי התיעוד של gpt-6-luna, ב-Chat Completions
+# קריאה לכלים נתמכת רק בערך הזה. אם מחליפים מודל ב-.env, צריך לבדוק שהוא תומך בפרמטר.
 llm = ChatOpenAI(model=OPENAI_MODEL, api_key=OPENAI_API_KEY, reasoning_effort="none")
 llm_with_tools = llm.bind_tools(tools)
 

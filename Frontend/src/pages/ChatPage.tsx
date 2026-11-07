@@ -49,22 +49,18 @@ export default function ChatPage({ onConversationsChanged }: Props) {
   const [reloadCount, setReloadCount] = useState(0);
   useEffect(() => {
     if (conversationId === null) return;
-    let ignore = false; // אם המסך נסגר לפני שהתשובה הגיעה, לא מעדכנים אותו
     getConversation(conversationId)
       .then((data) => {
-        if (!ignore) setMessages(data.messages);
+        if (isActive.current) setMessages(data.messages);
       })
       .catch((error) => {
-        if (ignore) return;
+        if (!isActive.current) return;
         if (error instanceof ApiError && error.status === 404) setNotFound(true);
         else setLoadError(error instanceof Error ? error.message : "Could not load the conversation.");
       })
       .finally(() => {
-        if (!ignore) setIsLoading(false);
+        if (isActive.current) setIsLoading(false);
       });
-    return () => {
-      ignore = true;
-    };
   }, [conversationId, reloadCount]);
 
   function retryLoad() {
@@ -74,6 +70,8 @@ export default function ChatPage({ onConversationsChanged }: Props) {
   }
 
   async function handleSend(content: string) {
+    // אם ההודעה הקודמת נכשלה, מסירים אותה מהמסך (השרת לא שמר אותה)
+    if (sendError) setMessages((prev) => prev.slice(0, -1));
     setSendError(null);
     // ההודעה של המשתמש מוצגת מיד, עוד לפני שהשרת ענה
     const tempMessage: Message = {
@@ -118,11 +116,9 @@ export default function ChatPage({ onConversationsChanged }: Props) {
     }
   }
 
-  // "נסה שוב": מסירים את ההודעה שנכשלה ושולחים אותה שוב (השרת לא שמר אותה)
+  // "נסה שוב": שולחים שוב את אותה הודעה
   function handleRetry() {
-    if (!sendError) return;
-    setMessages((prev) => prev.slice(0, -1));
-    handleSend(sendError.content);
+    if (sendError) handleSend(sendError.content);
   }
 
   if (notFound) {

@@ -19,19 +19,23 @@ Final project – Full Stack Web Developer course, John Bryce.
 
 ```
 DoronPrigal/
-├── Backend/            FastAPI app, LangGraph agent, requirements.txt, Postman collection
+├── Backend/            FastAPI app, LangGraph agent, requirements.txt, Postman collection (planned)
 ├── Frontend/           React app
-├── Database/           MySQL export (db_export.sql)
+├── Database/           MySQL export – db_export.sql (planned)
 └── docker-compose.yml  MySQL + phpMyAdmin only
 ```
 
 ## Getting started (Windows / PowerShell)
+
+Requirements: Docker Desktop, Python 3.14, Node.js 20.19 or newer.
 
 ### 1. Database
 
 ```powershell
 docker compose up -d
 ```
+
+On the very first run MySQL needs about 20–30 seconds to initialize. Wait for it before starting the Backend.
 
 - MySQL: `localhost:3306` (database `chat_db`)
 - phpMyAdmin: http://localhost:8080 (user `root`, password from `docker-compose.yml`)
@@ -46,6 +50,8 @@ pip install -r requirements.txt
 copy .env.example .env      # then put your OpenAI API key in .env
 uvicorn main:app --reload
 ```
+
+If PowerShell blocks `activate`, run once: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
 
 The API runs on http://localhost:8000. Tables are created automatically on first run.
 Interactive docs: http://localhost:8000/docs
@@ -75,4 +81,4 @@ Open http://localhost:5173 (the Backend must be running on port 8000).
 
 - `conversations` – one row per chat (`id` is the unique conversation id).
 - `messages` – every message, with `role` (`user` / `assistant`) and `conversation_id`.
-- `users` – registered users; each user sees only their own conversations.
+- `users` – registered users (login and per-user conversations are planned for the next stage).
