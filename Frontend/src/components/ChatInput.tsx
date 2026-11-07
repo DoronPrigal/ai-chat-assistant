@@ -1,16 +1,21 @@
 import { useEffect, useRef, useState } from "react";
-import type { FormEvent, KeyboardEvent } from "react";
-import { SendIcon } from "./Icons";
+import type { ChangeEvent, ClipboardEvent, FormEvent, KeyboardEvent } from "react";
+import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE } from "../api";
+import { CloseIcon, PaperclipIcon, SendIcon } from "./Icons";
 
 interface Props {
-  onSend: (content: string) => void;
+  onSend: (content: string, file: File | null) => void;
   disabled: boolean;
 }
 
 export default function ChatInput({ onSend, disabled }: Props) {
   const [text, setText] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState(""); // כתובת זמנית להצגת התמונה לפני השליחה
+  const [fileError, setFileError] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const canSend = !disabled && text.trim() !== "";
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const canSend = !disabled && (text.trim() !== "" || file !== null);
 
   // שדה הטקסט גדל לפי התוכן (עד גובה מקסימלי ב-CSS)
   useEffect(() => {
@@ -27,10 +32,48 @@ export default function ChatInput({ onSend, disabled }: Props) {
     }
   }, [disabled]);
 
+  // בחירת תמונה: בדיקת סוג וגודל כבר בדפדפן (השרת בודק שוב)
+  function chooseFile(chosen: File) {
+    if (!ALLOWED_IMAGE_TYPES.includes(chosen.type)) {
+      setFileError("Only PNG, JPEG, WebP or GIF images are allowed.");
+      return;
+    }
+    if (chosen.size > MAX_IMAGE_SIZE) {
+      setFileError("The image is too large. The maximum size is 5 MB.");
+      return;
+    }
+    removeFile();
+    setFile(chosen);
+    setPreview(URL.createObjectURL(chosen));
+  }
+
+  function removeFile() {
+    if (preview) URL.revokeObjectURL(preview);
+    setFile(null);
+    setPreview("");
+    setFileError("");
+  }
+
+  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const chosen = event.target.files?.[0];
+    if (chosen) chooseFile(chosen);
+    event.target.value = ""; // כדי שאפשר יהיה לבחור שוב את אותו קובץ
+  }
+
+  // הדבקת תמונה (Ctrl+V) ישר לשדה ההודעה
+  function handlePaste(event: ClipboardEvent<HTMLTextAreaElement>) {
+    const pasted = Array.from(event.clipboardData.files).find((f) => f.type.startsWith("image/"));
+    if (pasted) {
+      event.preventDefault();
+      chooseFile(pasted);
+    }
+  }
+
   function submit() {
     if (!canSend) return;
-    onSend(text.trim());
+    onSend(text.trim(), file);
     setText("");
+    removeFile();
   }
 
   function handleSubmit(event: FormEvent) {
@@ -47,24 +90,53 @@ export default function ChatInput({ onSend, disabled }: Props) {
   }
 
   return (
-    <form className="chat-input glass" onSubmit={handleSubmit}>
-      <label htmlFor="chat-message" className="visually-hidden">Message</label>
-      <textarea
-        id="chat-message"
-        ref={textareaRef}
-        rows={1}
-        value={text}
-        onChange={(event) => setText(event.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder="Ask anything"
-        dir="auto"
-        maxLength={8000}
-        aria-describedby="chat-hint"
-      />
-      <button type="submit" className="send-button" disabled={!canSend} aria-label="Send message">
-        <SendIcon />
-      </button>
-      <span id="chat-hint" className="visually-hidden">Press Enter to send, Shift and Enter for a new line.</span>
-    </form>
+    <>
+      <form className="chat-input glass" onSubmit={handleSubmit}>
+        {preview && (
+          <div className="attachment">
+            <img src={preview} alt="Attached image preview" />
+            <button type="button" className="attachment-remove" onClick={removeFile} aria-label="Remove attached image">
+              <CloseIcon />
+            </button>
+          </div>
+        )}
+
+        <div className="chat-input-row">
+          <button
+            type="button"
+            className="icon-button"
+            onClick={() => fileInputRef.current?.click()}
+            aria-label="Attach image"
+            title="Attach image"
+          >
+            <PaperclipIcon />
+          </button>
+          <input ref={fileInputRef} type="file" accept={ALLOWED_IMAGE_TYPES.join(",")} onChange={handleFileChange} hidden />
+
+          <label htmlFor="chat-message" className="visually-hidden">Message</label>
+          <textarea
+            id="chat-message"
+            ref={textareaRef}
+            rows={1}
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+            onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
+            placeholder="Ask anything"
+            dir="auto"
+            maxLength={8000}
+            aria-describedby="chat-hint"
+          />
+          <button type="submit" className="send-button" disabled={!canSend} aria-label="Send message">
+            <SendIcon />
+          </button>
+        </div>
+        <span id="chat-hint" className="visually-hidden">
+          Press Enter to send, Shift and Enter for a new line. You can attach or paste an image.
+        </span>
+      </form>
+
+      {fileError && <p className="input-error" role="alert">{fileError}</p>}
+    </>
   );
 }
