@@ -163,7 +163,6 @@ export default function App() {
         <Sidebar
           open={sidebarOpen}
           isMobile={isMobile}
-          username={user.username}
           conversations={conversations}
           error={listError}
           onRetry={loadConversations}

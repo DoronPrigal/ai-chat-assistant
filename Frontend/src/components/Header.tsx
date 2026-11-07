@@ -1,7 +1,8 @@
 import { Link, useLocation } from "react-router-dom";
 import type { User } from "../api";
 import ThemeToggle from "./ThemeToggle";
-import { LogoutIcon, PlusIcon, SidebarIcon } from "./Icons";
+import UserMenu from "./UserMenu";
+import { PlusIcon, SidebarIcon } from "./Icons";
 
 interface Props {
   user: User | null;
@@ -49,17 +50,7 @@ export default function Header({ user, sidebarOpen, onToggleSidebar, onLogout }:
 
       <ThemeToggle />
 
-      {user && (
-        <button
-          type="button"
-          className="icon-button"
-          onClick={onLogout}
-          aria-label={`Log out (${user.username})`}
-          title={`Log out (${user.username})`}
-        >
-          <LogoutIcon />
-        </button>
-      )}
+      {user && <UserMenu username={user.username} onLogout={onLogout} />}
     </header>
   );
 }

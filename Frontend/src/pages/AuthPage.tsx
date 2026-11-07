@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 
 import { login, register } from "../api";
 import type { AuthResponse } from "../api";
+import { useDocumentTitle } from "../useDocumentTitle";
 import "./AuthPage.css";
 
 interface Props {
@@ -15,6 +16,7 @@ interface Props {
 // מסך אחד להתחברות ולהרשמה. ההבדל: כותרות, רמזים וה-Endpoint.
 export default function AuthPage({ mode, sessionExpired, onAuthenticated }: Props) {
   const isLogin = mode === "login";
+  useDocumentTitle(isLogin ? "Log in" : "Sign up");
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
