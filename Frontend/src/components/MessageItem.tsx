@@ -19,7 +19,8 @@ export default function MessageItem({ message }: { message: Message }) {
   }
 
   return (
-    <article className={isUser ? "message message-user" : "message message-assistant"}>
+    // הודעה זמנית (id שלילי) היא הודעה שהמשתמש שלח הרגע: רק היא נכנסת עם fade
+    <article className={`message ${isUser ? "message-user" : "message-assistant"}${message.id < 0 ? " message-new" : ""}`}>
       <span className="visually-hidden">{isUser ? "You said:" : "Assistant said:"}</span>
 
       {/* תמונה שהמשתמש צירף או שהסוכן יצר. לחיצה פותחת אותה בגודל מלא. */}

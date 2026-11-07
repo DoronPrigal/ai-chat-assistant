@@ -2,6 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent, ClipboardEvent, FormEvent, KeyboardEvent } from "react";
 import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE } from "../api";
 import { CloseIcon, PaperclipIcon, SendIcon } from "./Icons";
+import VoiceButton from "./VoiceButton";
+
+// מחבר את מה שנאמר בקול לטקסט שכבר היה כתוב בשדה
+function joinSpoken(before: string, spoken: string) {
+  const text = spoken.trim();
+  if (!before.trim()) return text;
+  return before.endsWith(" ") ? before + text : `${before} ${text}`;
+}
 
 interface Props {
   onSend: (content: string, file: File | null) => void;
@@ -12,7 +20,9 @@ export default function ChatInput({ onSend, disabled }: Props) {
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState(""); // כתובת זמנית להצגת התמונה לפני השליחה
-  const [fileError, setFileError] = useState("");
+  const [inputError, setInputError] = useState(""); // שגיאה בצירוף תמונה או בהקלטה קולית
+  const textBeforeVoice = useRef(""); // הטקסט שהיה בשדה כשההקלטה התחילה
+  const [sendCount, setSendCount] = useState(0); // משמש כ-key: אחרי שליחה כפתור ההקלטה מתאפס ומפסיק להקשיב
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canSend = !disabled && (text.trim() !== "" || file !== null);
@@ -35,11 +45,11 @@ export default function ChatInput({ onSend, disabled }: Props) {
   // בחירת תמונה: בדיקת סוג וגודל כבר בדפדפן (השרת בודק שוב)
   function chooseFile(chosen: File) {
     if (!ALLOWED_IMAGE_TYPES.includes(chosen.type)) {
-      setFileError("Only PNG, JPEG, WebP or GIF images are allowed.");
+      setInputError("Only PNG, JPEG, WebP or GIF images are allowed.");
       return;
     }
     if (chosen.size > MAX_IMAGE_SIZE) {
-      setFileError("The image is too large. The maximum size is 5 MB.");
+      setInputError("The image is too large. The maximum size is 5 MB.");
       return;
     }
     removeFile();
@@ -51,7 +61,7 @@ export default function ChatInput({ onSend, disabled }: Props) {
     if (preview) URL.revokeObjectURL(preview);
     setFile(null);
     setPreview("");
-    setFileError("");
+    setInputError("");
   }
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
@@ -74,6 +84,7 @@ export default function ChatInput({ onSend, disabled }: Props) {
     onSend(text.trim(), file);
     setText("");
     removeFile();
+    setSendCount((count) => count + 1);
   }
 
   function handleSubmit(event: FormEvent) {
@@ -127,6 +138,15 @@ export default function ChatInput({ onSend, disabled }: Props) {
             maxLength={8000}
             aria-describedby="chat-hint"
           />
+          {/* הקלטה קולית: הטקסט נכנס לשדה ולא נשלח, כדי שאפשר יהיה לערוך לפני שליחה */}
+          <VoiceButton
+            key={sendCount}
+            onStart={() => {
+              textBeforeVoice.current = text;
+            }}
+            onTranscript={(spoken) => setText(joinSpoken(textBeforeVoice.current, spoken))}
+            onError={setInputError}
+          />
           <button type="submit" className="send-button" disabled={!canSend} aria-label="Send message">
             <SendIcon />
           </button>
@@ -136,7 +156,7 @@ export default function ChatInput({ onSend, disabled }: Props) {
         </span>
       </form>
 
-      {fileError && <p className="input-error" role="alert">{fileError}</p>}
+      {inputError && <p className="input-error" role="alert">{inputError}</p>}
     </>
   );
 }

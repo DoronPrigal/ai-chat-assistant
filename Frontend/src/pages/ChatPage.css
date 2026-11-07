@@ -109,6 +109,11 @@
 .message {
   display: flex;
   flex-direction: column;
+}
+
+/* fade קצר רק להודעה שנוספה עכשיו (ההודעה של המשתמש ותחילת התשובה).
+   הודעה שמורה שמחליפה אותן לא מונפשת שוב, כדי שלא יהיה "הבהוב" בסוף התשובה. */
+.message-new {
   animation: message-in var(--duration) ease-out;
 }
 
@@ -318,6 +323,11 @@
   color: var(--color-text);
 }
 
+/* התשובה שנכתבת עכשיו מופיעה אחרי ההודעות, באותו מרווח כמו ביניהן */
+.live-answer {
+  margin-top: var(--space-5);
+}
+
 /* ===== "חושב..." ===== */
 .thinking {
   display: flex;
@@ -462,6 +472,45 @@
 
 .chat-input textarea::placeholder {
   color: var(--color-text-muted);
+}
+
+/* ===== הקלטה קולית ===== */
+.voice-language {
+  flex-shrink: 0;
+  height: 40px;
+  padding: 0 var(--space-1);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.voice-language:hover:not(:disabled) {
+  background: var(--color-hover);
+  color: var(--color-text);
+}
+
+.voice-language:disabled {
+  cursor: not-allowed;
+}
+
+/* בזמן הקלטה: הכפתור בצבע הראשי עם טבעת פועמת */
+.voice-button.listening {
+  background: var(--button-primary-bg);
+  color: #fff;
+  animation: listening 1.4s ease-in-out infinite;
+}
+
+@keyframes listening {
+  0%, 100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--button-primary-bg) 45%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--button-primary-bg) 0%, transparent);
+  }
 }
 
 /* כפתור השליחה: הבולט ביותר במסך, עם הגרדיאנט */

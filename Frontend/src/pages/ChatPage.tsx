@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 
-import { ApiError, createConversation, getConversation, sendMessage, uploadImage } from "../api";
+import { ApiError, getConversation, streamMessage, uploadImage } from "../api";
 import type { Message } from "../api";
 import MessageList from "../components/MessageList";
+import type { LiveAnswer } from "../components/MessageList";
 import ChatInput from "../components/ChatInput";
 import EmptyState from "../components/EmptyState";
 import { useDocumentTitle } from "../useDocumentTitle";
@@ -37,6 +38,8 @@ export default function ChatPage({ onConversationsChanged }: Props) {
   const [title, setTitle] = useState(""); // כותרת השיחה (ללשונית הדפדפן ולקורא מסך)
   useDocumentTitle(conversationId === null ? "New chat" : title);
   const [isThinking, setIsThinking] = useState(false);
+  // התשובה שנכתבת עכשיו (Streaming): הטקסט שהגיע עד כה, ושם הכלי שהסוכן מפעיל
+  const [liveAnswer, setLiveAnswer] = useState<LiveAnswer | null>(null);
   const [sendError, setSendError] = useState<{ message: string; content: string; file: File | null } | null>(null);
 
   // האם המסך עדיין פתוח (כדי לא לעדכן מסך שהמשתמש כבר עזב)
@@ -57,7 +60,8 @@ export default function ChatPage({ onConversationsChanged }: Props) {
     window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" });
   }
 
-  // הודעה חדשה או "חושב...": גוללים עד הסוף
+  // הודעה חדשה, "חושב..." או כלי חדש: גוללים עד הסוף.
+  // בזמן שהתשובה נכתבת, ה-ResizeObserver למטה שומר אותנו בסוף (אם המשתמש לא גלל למעלה).
   useEffect(() => {
     isAtBottom.current = true;
     scrollToBottom();
@@ -121,24 +125,28 @@ export default function ChatPage({ onConversationsChanged }: Props) {
     };
     setMessages((prev) => [...prev, tempMessage]);
     setIsThinking(true);
+    setLiveAnswer({ text: "", tool: "" });
 
     try {
       // קודם מעלים את התמונה (אם יש), ואז שולחים את ההודעה עם הנתיב שלה בשרת
       const imagePath = file ? (await uploadImage(file)).image_path : null;
 
-      if (conversationId === null) {
-        // שיחה חדשה נוצרת בשרת רק עכשיו, יחד עם ההודעה הראשונה
-        const data = await createConversation(content, imagePath);
-        onConversationsChanged();
+      // התשובה מגיעה מילה אחר מילה. בשיחה חדשה, השיחה נוצרת בשרת רק בסוף התשובה.
+      const data = await streamMessage(conversationId, content, imagePath, (event) => {
         if (!isActive.current) return;
+        // הסוכן מפעיל כלי: מציגים חיווי, ומתחילים את הטקסט מחדש (התשובה הסופית תבוא אחרי הכלי)
+        if (event.type === "tool") setLiveAnswer({ text: "", tool: event.name });
+        if (event.type === "token") setLiveAnswer((prev) => ({ text: (prev?.text ?? "") + event.text, tool: "" }));
+      });
+      onConversationsChanged();
+      if (!isActive.current) return;
+
+      if (data.conversation) {
         navigate(`/c/${data.conversation.id}`, {
           replace: true,
           state: { messages: [data.user_message, data.assistant_message] },
         });
       } else {
-        const data = await sendMessage(conversationId, content, imagePath);
-        onConversationsChanged();
-        if (!isActive.current) return;
         setMessages((prev) => [
           ...prev.filter((m) => m.id !== tempMessage.id),
           data.user_message,
@@ -153,7 +161,10 @@ export default function ChatPage({ onConversationsChanged }: Props) {
         file,
       });
     } finally {
-      if (isActive.current) setIsThinking(false);
+      if (isActive.current) {
+        setIsThinking(false);
+        setLiveAnswer(null);
+      }
     }
   }
 
@@ -192,7 +203,7 @@ export default function ChatPage({ onConversationsChanged }: Props) {
           </div>
         )}
 
-        <MessageList messages={messages} isThinking={isThinking} isLoading={isLoading} />
+        <MessageList messages={messages} isThinking={isThinking} isLoading={isLoading} liveAnswer={liveAnswer} />
 
         {sendError && (
           <div className="error-box send-error" role="alert">

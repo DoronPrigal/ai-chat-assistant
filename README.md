@@ -85,8 +85,10 @@ All `/api/conversations` and `/api/uploads` endpoints require `Authorization: Be
 | GET | `/api/auth/me` | The logged-in user |
 | GET | `/api/conversations` | List conversations, newest first |
 | POST | `/api/conversations` | Start a conversation with its first message (created only after the agent answers) |
+| POST | `/api/conversations/stream` | Same, but the answer is streamed word by word (see below) |
 | GET | `/api/conversations/{id}` | A conversation with all its messages |
 | POST | `/api/conversations/{id}/messages` | Send a message (text and/or `image_path`) and get the agent's reply |
+| POST | `/api/conversations/{id}/messages/stream` | Same, but the answer is streamed word by word |
 | DELETE | `/api/conversations/{id}` | Delete a conversation, its messages and its image files |
 | POST | `/api/uploads` | Upload an image (PNG, JPEG, WebP or GIF, up to 5 MB), returns its `image_path` |
 | GET | `/uploads/{file}` | The image file itself (random, unguessable file names) |
@@ -102,6 +104,24 @@ A LangGraph ReAct loop (`agent` node + `tools` node) in `Backend/agent/`:
   - `generate_image` – creates an image with `gpt-image-1-mini` (1024×1024, low quality, about half a cent per image) when the user asks to draw something.
 
 Images are stored as files in `Backend/uploads/` (not in Git); the database stores only their path.
+
+### Streaming
+
+The chat uses the `/stream` endpoints: the graph runs with `stream_mode="messages"` and FastAPI's `StreamingResponse` sends one JSON line per event (NDJSON):
+
+| Event | Meaning |
+|---|---|
+| `{"type": "tool", "name": "get_weather"}` | The agent is calling a tool – the UI shows "Checking the weather…" |
+| `{"type": "token", "text": "..."}` | The next piece of the answer |
+| `{"type": "done", "user_message": {...}, "assistant_message": {...}}` | The full answer was saved (a new chat also gets `conversation`) |
+| `{"type": "error", "message": "..."}` | The agent failed – nothing was saved, the UI offers "Try again" |
+
+Messages are saved only after the full answer, exactly like the regular endpoints. If the agent fails or the user leaves mid-answer, nothing is saved and any image it created is deleted.
+
+## Other features
+
+- **Voice input:** a microphone button uses the browser's Web Speech API (no library, no cost), in Hebrew or English (the HE/EN button). The text goes into the input box for editing – it is not sent automatically. The button appears only in browsers that support it (Chrome, Edge, Safari).
+- **Error Boundary:** if a component crashes, a friendly "Something went wrong" screen with a Reload button appears instead of a blank page.
 
 ### Known limitation: image links are public
 
