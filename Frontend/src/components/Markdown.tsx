@@ -36,6 +36,8 @@ function CodeBlock({ children }: ComponentProps<"pre">) {
 // node הוא מידע פנימי של react-markdown. מוציאים אותו (_node) כדי שלא יגיע ל-HTML.
 const components: Components = {
   pre: ({ node: _node, ...props }) => <CodeBlock {...props} />,
+  // קוד תמיד משמאל לימין, גם בתוך פסקה בעברית (אחרת "text[::-1]" מוצג הפוך)
+  code: ({ node: _node, ...props }) => <code dir="ltr" {...props} />,
   a: ({ node: _node, ...props }) => <a {...props} target="_blank" rel="noreferrer" />,
   p: ({ node: _node, ...props }) => <p dir="auto" {...props} />,
   li: ({ node: _node, ...props }) => <li dir="auto" {...props} />,

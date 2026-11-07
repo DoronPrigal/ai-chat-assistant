@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import type { User } from "../api";
 import ThemeToggle from "./ThemeToggle";
 import UserMenu from "./UserMenu";
+import Logo from "./Logo";
 import { PlusIcon, SidebarIcon } from "./Icons";
 
 interface Props {
@@ -39,7 +40,7 @@ export default function Header({ user, sidebarOpen, onToggleSidebar, onLogout }:
       )}
 
       <Link to="/" className="brand" aria-label="AI Chat – home">
-        <img src="/favicon.svg" alt="" width={28} height={28} />
+        <Logo />
         <span className="brand-name">AI Chat</span>
       </Link>
 

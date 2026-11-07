@@ -41,16 +41,17 @@ export default function Sidebar({ open, isMobile, conversations, error, onRetry,
       {isDrawer && <div className="sidebar-backdrop" onClick={onClose} />}
 
       <aside id="sidebar" className={open ? "sidebar glass open" : "sidebar glass"} aria-label="Conversations" inert={!open}>
+        {/* בנייד: כפתור הסגירה משמאל, בדיוק במקום של כפתור הפתיחה, כדי שלא ילחצו בטעות על New chat */}
         <div className="sidebar-top">
-          <Link to="/" className="new-chat-button" onClick={handleNavigate} ref={newChatRef}>
-            <PlusIcon />
-            New chat
-          </Link>
           {isMobile && (
             <button type="button" className="icon-button" onClick={onClose} aria-label="Close conversations">
               <CloseIcon />
             </button>
           )}
+          <Link to="/" className="new-chat-button" onClick={handleNavigate} ref={newChatRef}>
+            <PlusIcon />
+            New chat
+          </Link>
         </div>
 
         <h2 className="sidebar-heading">Recent</h2>

@@ -200,13 +200,16 @@
   color: var(--color-text-muted);
 }
 
-/* קוד בתוך שורה */
+/* קוד בתוך שורה: קופסה אחת משמאל לימין, שלא נחתכת בין שתי שורות של טקסט בעברית */
 .markdown code {
+  display: inline-block;
+  max-width: 100%;
   padding: 0.1em 0.35em;
   border-radius: 6px;
   background: var(--color-code-bg);
   font-family: var(--font-mono);
   font-size: 0.875em;
+  line-height: 1.4;
 }
 
 /* בלוק קוד */
@@ -225,6 +228,7 @@
 }
 
 .code-block pre code {
+  display: inline;
   padding: 0;
   background: none;
   font-size: var(--text-sm);
