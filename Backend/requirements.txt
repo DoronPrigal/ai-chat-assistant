@@ -1,0 +1,12 @@
+fastapi==0.162.1
+uvicorn==0.54.0
+pydantic==2.14.3
+python-dotenv==1.2.4
+mysql-connector-python==26.10.0
+langgraph==1.2.20
+langchain-openai==1.7.4
+langchain-core==1.7.6
+openai==3.46.0
+bcrypt==5.0.0
+PyJWT==2.15.1
+python-multipart==0.0.33

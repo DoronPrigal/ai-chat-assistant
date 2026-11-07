@@ -1,0 +1,61 @@
+# AI Chat Assistant
+
+A ChatGPT-style web app: a React SPA talks to a FastAPI REST API, which runs a LangGraph agent on top of OpenAI and stores every conversation in MySQL.
+
+Final project – Full Stack Web Developer course, John Bryce.
+
+**GitHub:** https://github.com/DoronPrigal/ai-chat-assistant
+
+## Tech stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React + Vite + TypeScript, pure CSS |
+| Backend | Python 3.14, FastAPI, Pydantic |
+| AI | LangGraph agent, `langchain-openai` (OpenAI is called only from the server) |
+| Database | MySQL 8 (Docker), phpMyAdmin |
+
+## Project structure
+
+```
+DoronPrigal/
+├── Backend/            FastAPI app, LangGraph agent, requirements.txt, Postman collection
+├── Frontend/           React app
+├── Database/           MySQL export (db_export.sql)
+└── docker-compose.yml  MySQL + phpMyAdmin only
+```
+
+## Getting started (Windows / PowerShell)
+
+### 1. Database
+
+```powershell
+docker compose up -d
+```
+
+- MySQL: `localhost:3306` (database `chat_db`)
+- phpMyAdmin: http://localhost:8080 (user `root`, password from `docker-compose.yml`)
+
+### 2. Backend
+
+```powershell
+cd Backend
+py -3.14 -m venv env
+.\env\Scripts\activate
+pip install -r requirements.txt
+copy .env.example .env      # then put your OpenAI API key in .env
+uvicorn main:app --reload
+```
+
+The API runs on http://localhost:8000. Tables are created automatically on first run.
+Interactive docs: http://localhost:8000/docs
+
+### 3. Frontend
+
+_Coming in the next stage._
+
+## Database design
+
+- `conversations` – one row per chat (`id` is the unique conversation id).
+- `messages` – every message, with `role` (`user` / `assistant`) and `conversation_id`.
+- `users` – registered users; each user sees only their own conversations.
