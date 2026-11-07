@@ -1,7 +1,20 @@
 // כל הפניות לשרת במקום אחד. ה-Frontend לא פונה ל-OpenAI ישירות, אלא רק ל-API שלנו.
 const API_URL = "http://localhost:8000/api";
+const TOKEN_KEY = "token";
 
 export type Role = "user" | "assistant";
+
+export interface User {
+  id: number;
+  username: string;
+  created_at: string;
+}
+
+export interface AuthResponse {
+  access_token: string;
+  token_type: string;
+  user: User;
+}
 
 export interface Message {
   id: number;
@@ -42,13 +55,46 @@ export class ApiError extends Error {
   }
 }
 
+// ===== הטוקן (JWT) נשמר בדפדפן ונשלח בכל בקשה =====
+export function getToken() {
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function saveToken(token: string) {
+  try {
+    localStorage.setItem(TOKEN_KEY, token);
+  } catch {
+    // אם הדפדפן חוסם שמירה, המשתמש יצטרך להתחבר שוב אחרי רענון
+  }
+}
+
+export function clearToken() {
+  try {
+    localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    // אין מה לנקות
+  }
+}
+
+// מה עושים כשהשרת מחזיר 401 (טוקן שפג תוקפו). App קובע את זה.
+let handleUnauthorized: (() => void) | null = null;
+
+export function setUnauthorizedHandler(handler: () => void) {
+  handleUnauthorized = handler;
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const token = getToken();
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
   let response: Response;
   try {
-    response = await fetch(API_URL + path, {
-      ...options,
-      headers: { "Content-Type": "application/json" },
-    });
+    response = await fetch(API_URL + path, { ...options, headers });
   } catch {
     throw new ApiError("Can't reach the server. Please check that it is running and try again.", 0);
   }
@@ -58,9 +104,12 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     try {
       const data = await response.json();
       if (typeof data.detail === "string") message = data.detail;
+      // שגיאת ולידציה של Pydantic (422) מגיעה כרשימה
+      else if (Array.isArray(data.detail) && data.detail[0]?.msg) message = data.detail[0].msg;
     } catch {
       // התשובה לא הייתה JSON, נשארים עם ההודעה הכללית
     }
+    if (response.status === 401 && token && handleUnauthorized) handleUnauthorized();
     throw new ApiError(message, response.status);
   }
 
@@ -68,6 +117,26 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return response.json();
 }
 
+// ===== משתמשים =====
+export function register(username: string, password: string) {
+  return request<AuthResponse>("/auth/register", {
+    method: "POST",
+    body: JSON.stringify({ username, password }),
+  });
+}
+
+export function login(username: string, password: string) {
+  return request<AuthResponse>("/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ username, password }),
+  });
+}
+
+export function getMe() {
+  return request<User>("/auth/me");
+}
+
+// ===== שיחות =====
 export function getConversations() {
   return request<Conversation[]>("/conversations");
 }

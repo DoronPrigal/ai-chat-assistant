@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 
-import { deleteConversation, getConversations } from "./api";
-import type { Conversation } from "./api";
+import {
+  clearToken, deleteConversation, getConversations, getMe, getToken, saveToken, setUnauthorizedHandler,
+} from "./api";
+import type { AuthResponse, Conversation, User } from "./api";
 import { useIsMobile } from "./useIsMobile";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import ChatPage from "./pages/ChatPage";
 import AboutPage from "./pages/AboutPage";
+import AuthPage from "./pages/AuthPage";
 import "./App.css";
 
 // הבחירה של המשתמש להציג או להסתיר את הסרגל במחשב נשמרת בדפדפן
@@ -32,15 +35,40 @@ export default function App() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
+  // המשתמש המחובר. אם יש טוקן שמור, מחכים לבדיקה מול השרת לפני שמציגים מסך.
+  const [user, setUser] = useState<User | null>(null);
+  const [authChecked, setAuthChecked] = useState(() => getToken() === null);
+
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [listError, setListError] = useState("");
 
   // במחשב: מוסתר כברירת מחדל ונשמר. בנייד: מגירה שנפתחת ונסגרת.
   const [desktopOpen, setDesktopOpen] = useState(readSidebarChoice);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const sidebarOpen = isMobile ? mobileOpen : desktopOpen;
+  const sidebarOpen = user !== null && (isMobile ? mobileOpen : desktopOpen);
   // useCallback: אותה פונקציה בכל רינדור, כי היא תלות של useEffect בסרגל
   const closeMobileSidebar = useCallback(() => setMobileOpen(false), []);
+
+  // בכניסה לאתר: בודקים מול השרת שהטוקן השמור עדיין תקף
+  useEffect(() => {
+    if (getToken() === null) return;
+    getMe()
+      .then(setUser)
+      .catch(() => {
+        // 401 מטופל ב-setUnauthorizedHandler. בשגיאה אחרת פשוט מציגים התחברות.
+      })
+      .finally(() => setAuthChecked(true));
+  }, []);
+
+  // טוקן שפג תוקפו באמצע העבודה: מתנתקים ועוברים למסך ההתחברות
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      clearToken();
+      setUser(null);
+      setConversations([]);
+      navigate("/login", { state: { expired: true } });
+    });
+  }, [navigate]);
 
   function loadConversations() {
     getConversations()
@@ -51,10 +79,23 @@ export default function App() {
       .catch((error) => setListError(error instanceof Error ? error.message : "Could not load conversations."));
   }
 
-  // טעינת רשימת השיחות פעם אחת, כשהאתר נפתח
+  // טעינת השיחות של המשתמש אחרי שהוא התחבר
   useEffect(() => {
-    loadConversations();
-  }, []);
+    if (user) loadConversations();
+  }, [user]);
+
+  function handleAuthenticated(data: AuthResponse) {
+    saveToken(data.access_token);
+    setUser(data.user);
+  }
+
+  function handleLogout() {
+    clearToken();
+    setUser(null);
+    setConversations([]);
+    setMobileOpen(false);
+    navigate("/login");
+  }
 
   function toggleSidebar() {
     if (isMobile) {
@@ -77,30 +118,52 @@ export default function App() {
     }
   }
 
+  // עד שהבדיקה של הטוקן מסתיימת לא מציגים כלום (לוקח רגע), כדי שלא יהבהב מסך ההתחברות
+  if (!authChecked) return null;
+
+  // מסך הצ'אט מוגן: בלי משתמש מחובר עוברים להתחברות, וזוכרים לאן רצו להגיע.
   // key={location.key}: כל ניווט (שיחה אחרת או "שיחה חדשה") פותח את מסך הצ'אט מחדש ונקי
-  const chatPage = <ChatPage key={location.key} onConversationsChanged={loadConversations} />;
+  const chatPage = user ? (
+    <ChatPage key={location.key} onConversationsChanged={loadConversations} />
+  ) : (
+    <Navigate to="/login" replace state={{ from: location.pathname }} />
+  );
+
+  // אחרי התחברות חוזרים לדף שהמשתמש רצה להגיע אליו
+  const afterLogin = (location.state as { from?: string } | null)?.from ?? "/";
 
   return (
     <div className={sidebarOpen ? "app sidebar-open" : "app"}>
       <a href="#main" className="skip-link">Skip to content</a>
 
-      <Header sidebarOpen={sidebarOpen} onToggleSidebar={toggleSidebar} />
+      <Header user={user} sidebarOpen={sidebarOpen} onToggleSidebar={toggleSidebar} onLogout={handleLogout} />
 
-      <Sidebar
-        open={sidebarOpen}
-        isMobile={isMobile}
-        conversations={conversations}
-        error={listError}
-        onRetry={loadConversations}
-        onDelete={handleDelete}
-        onClose={closeMobileSidebar}
-      />
+      {user && (
+        <Sidebar
+          open={sidebarOpen}
+          isMobile={isMobile}
+          username={user.username}
+          conversations={conversations}
+          error={listError}
+          onRetry={loadConversations}
+          onDelete={handleDelete}
+          onClose={closeMobileSidebar}
+        />
+      )}
 
       <main id="main" className="main" tabIndex={-1}>
         <Routes>
           <Route path="/" element={chatPage} />
           <Route path="/c/:id" element={chatPage} />
           <Route path="/about" element={<AboutPage />} />
+          <Route
+            path="/login"
+            element={user ? <Navigate to={afterLogin} replace /> : <AuthPage key="login" mode="login" onAuthenticated={handleAuthenticated} />}
+          />
+          <Route
+            path="/register"
+            element={user ? <Navigate to="/" replace /> : <AuthPage key="register" mode="register" onAuthenticated={handleAuthenticated} />}
+          />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

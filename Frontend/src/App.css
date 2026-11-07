@@ -66,10 +66,16 @@
   color: var(--color-text);
 }
 
-/* במסך צר מאוד מסתירים את שם האתר ומשאירים את הלוגו */
+/* במסך צר מאוד מסתירים את שם האתר ומשאירים את הלוגו.
+   למשתמש מחובר יש יותר כפתורים, אז מסתירים גם את הלוגו ("New chat" ו-"Chat" מובילים הביתה) */
 @media (max-width: 399px) {
-  .brand-name {
+  .brand-name,
+  .has-user .brand {
     display: none;
+  }
+
+  .has-user .main-nav {
+    margin-left: auto;
   }
 }
 
@@ -221,6 +227,36 @@
 .conversation-item:focus-within .delete-button,
 .conversation-link.active + .delete-button {
   opacity: 1;
+}
+
+/* תחתית הסרגל: המשתמש המחובר */
+.sidebar-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: auto;
+  padding: var(--space-3) 10px 0;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.sidebar-footer strong {
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  background: var(--button-primary-bg);
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 700;
 }
 
 /* במסכי מגע אין "מעבר עכבר", אז הכפתור תמיד גלוי */
