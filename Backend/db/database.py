@@ -27,11 +27,11 @@ def create_tables():
         ) DEFAULT CHARSET=utf8mb4
     """)
 
-    # user_id ריק עד שלב המשתמשים. מחיקת משתמש מוחקת גם את השיחות שלו.
+    # כל שיחה שייכת למשתמש. מחיקת משתמש מוחקת גם את השיחות שלו.
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS conversations (
             id INT AUTO_INCREMENT PRIMARY KEY,
-            user_id INT NULL,
+            user_id INT NOT NULL,
             title VARCHAR(100) NOT NULL DEFAULT 'New chat',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

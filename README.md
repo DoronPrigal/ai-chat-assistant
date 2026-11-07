@@ -68,9 +68,14 @@ Open http://localhost:5173 (the Backend must be running on port 8000).
 
 ## API endpoints
 
+All `/api/conversations` endpoints require `Authorization: Bearer <token>` and work only on the logged-in user's conversations (another user's conversation returns 404).
+
 | Method | Path | Description |
 |---|---|---|
 | GET | `/api/health` | Server and database check |
+| POST | `/api/auth/register` | Create an account, returns a JWT |
+| POST | `/api/auth/login` | Log in, returns a JWT |
+| GET | `/api/auth/me` | The logged-in user |
 | GET | `/api/conversations` | List conversations, newest first |
 | POST | `/api/conversations` | Start a conversation with its first message (created only after the agent answers) |
 | GET | `/api/conversations/{id}` | A conversation with all its messages |
@@ -79,6 +84,8 @@ Open http://localhost:5173 (the Backend must be running on port 8000).
 
 ## Database design
 
-- `conversations` – one row per chat (`id` is the unique conversation id).
+- `users` – registered users. Passwords are stored only as bcrypt hashes.
+- `conversations` – one row per chat (`id` is the unique conversation id), owned by a user (`user_id`).
 - `messages` – every message, with `role` (`user` / `assistant`) and `conversation_id`.
-- `users` – registered users (login and per-user conversations are planned for the next stage).
+
+Deleting a user deletes their conversations, and deleting a conversation deletes its messages (`ON DELETE CASCADE`).
