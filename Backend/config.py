@@ -14,8 +14,12 @@ DB_USER = os.getenv("DB_USER", "root")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_NAME = os.getenv("DB_NAME", "chat_db")
 
-JWT_SECRET = os.getenv("JWT_SECRET")
-if not JWT_SECRET or len(JWT_SECRET) < 32:
-    raise RuntimeError("JWT_SECRET in Backend/.env is missing or shorter than 32 characters")
+# הסוד שחותם את הטוקנים. סוד חסר, קצר או ציבורי (מקובץ הדוגמה) מאפשר לזייף טוקן, אז השרת לא עולה.
+JWT_SECRET = os.getenv("JWT_SECRET", "")
+if len(JWT_SECRET) < 32 or JWT_SECRET.startswith("change-me"):
+    raise RuntimeError(
+        "Set JWT_SECRET in Backend/.env to a random string of at least 32 characters. "
+        'Generate one with: python -c "import secrets; print(secrets.token_hex(32))"'
+    )
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")

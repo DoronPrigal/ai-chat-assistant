@@ -1,5 +1,8 @@
 from db.database import get_db
 
+# שימו לב: הפונקציות כאן לא בודקות למי השיחה שייכת.
+# כל נתיב חייב לבדוק קודם עם conversations_db.get_conversation(conversation_id, user_id).
+
 
 def get_messages(conversation_id):
     """כל ההודעות של שיחה, לפי סדר הכתיבה."""

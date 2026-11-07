@@ -40,6 +40,8 @@ On the very first run MySQL needs about 20–30 seconds to initialize. Wait for 
 - MySQL: `localhost:3306` (database `chat_db`)
 - phpMyAdmin: http://localhost:8080 (user `root`, password from `docker-compose.yml`)
 
+If you ran an older version of the project before, reset the database so the tables are created with the current structure: `docker compose down -v` and then `docker compose up -d` (this deletes all local data).
+
 ### 2. Backend
 
 ```powershell
@@ -47,9 +49,14 @@ cd Backend
 py -3.14 -m venv env
 .\env\Scripts\activate
 pip install -r requirements.txt
-copy .env.example .env      # then put your OpenAI API key in .env
+copy .env.example .env
+python -c "import secrets; print(secrets.token_hex(32))"
 uvicorn main:app --reload
 ```
+
+Before starting the server, edit `Backend/.env`:
+- `OPENAI_API_KEY` – your OpenAI API key.
+- `JWT_SECRET` – paste the random string printed by the `secrets` command above. The server refuses to start without a secret of at least 32 characters.
 
 If PowerShell blocks `activate`, run once: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
 

@@ -26,6 +26,10 @@ def verify_password(password, password_hash):
     return bcrypt.checkpw(password.encode("utf-8"), password_hash.encode("utf-8"))
 
 
+# hash קבוע לבדיקה כשהמשתמש לא קיים, כדי שזמן התגובה יהיה דומה (ראו routes/auth.py)
+DUMMY_HASH = hash_password("not-a-real-password")
+
+
 def create_token(user_id):
     payload = {
         "sub": str(user_id),  # PyJWT דורש ש-sub יהיה מחרוזת
@@ -39,7 +43,9 @@ def get_current_user(credentials: HTTPAuthorizationCredentials | None = Depends(
     if credentials is None:
         raise HTTPException(status_code=401, detail="Please log in", headers={"WWW-Authenticate": "Bearer"})
     try:
-        payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=[ALGORITHM])
+        # require: טוקן בלי תאריך תפוגה או בלי מזהה משתמש נדחה
+        payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=[ALGORITHM],
+                             options={"require": ["exp", "sub"]})
         user_id = int(payload["sub"])
     except (jwt.InvalidTokenError, KeyError, ValueError):
         raise HTTPException(status_code=401, detail="Your session has expired. Please log in again.",
