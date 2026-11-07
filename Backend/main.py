@@ -1,5 +1,8 @@
+import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
+
+import mysql.connector
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -8,6 +11,9 @@ from fastapi.staticfiles import StaticFiles
 from config import FRONTEND_URL, UPLOADS_DIR
 from db.database import get_db, create_tables
 from routes import auth, conversations, uploads
+
+# לוג של השרת: שגיאות (למשל של OpenAI) נרשמות כאן עם הפרטים המלאים
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
 
 @asynccontextmanager
@@ -46,7 +52,10 @@ app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 @app.get("/api/health")
 def health():
     """בדיקה שהשרת עובד ושיש חיבור ל-DB."""
-    conn = get_db()
+    try:
+        conn = get_db()
+    except mysql.connector.Error:
+        raise HTTPException(status_code=503, detail="The database is not available")
     cursor = conn.cursor()
     cursor.execute("SELECT 1")
     cursor.fetchone()

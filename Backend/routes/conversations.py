@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
 
 from db import conversations_db, messages_db
@@ -10,6 +12,7 @@ from security import get_current_user
 
 # כל ה-Endpoints כאן דורשים משתמש מחובר, ועובדים רק על השיחות שלו
 router = APIRouter(prefix="/api/conversations", tags=["Conversations"])
+logger = logging.getLogger(__name__)
 
 HISTORY_LIMIT = 20  # כמה הודעות אחרונות נשלחות למודל
 
@@ -21,8 +24,8 @@ def ask_agent(history, body):
         raise HTTPException(status_code=400, detail="The attached image was not found. Please attach it again.")
     try:
         return get_reply(history, body.content, body.image_path)
-    except Exception as error:
-        print("Agent error:", error)
+    except Exception:
+        logger.exception("Agent error")  # השגיאה המלאה נרשמת בלוג של השרת, והמשתמש מקבל הודעה ידידותית
         raise HTTPException(status_code=502, detail="The AI service is not available right now. Please try again.")
 
 
@@ -42,8 +45,9 @@ def create_conversation(body: MessageCreate, user: dict = Depends(get_current_us
     reply, generated_image = ask_agent([], body)
 
     conversation = conversations_db.create_conversation(user["id"], make_title(body))
-    user_message = messages_db.add_message(conversation["id"], "user", body.content, body.image_path)
-    assistant_message = messages_db.add_message(conversation["id"], "assistant", reply, generated_image)
+    user_message, assistant_message = messages_db.add_exchange(
+        conversation["id"], body.content, body.image_path, reply, generated_image
+    )
     return {"conversation": conversation, "user_message": user_message, "assistant_message": assistant_message}
 
 
@@ -70,6 +74,7 @@ def send_message(conversation_id: int, body: MessageCreate, user: dict = Depends
     history = messages_db.get_last_messages(conversation_id, HISTORY_LIMIT)
     reply, generated_image = ask_agent(history, body)
 
-    user_message = messages_db.add_message(conversation_id, "user", body.content, body.image_path)
-    assistant_message = messages_db.add_message(conversation_id, "assistant", reply, generated_image)
+    user_message, assistant_message = messages_db.add_exchange(
+        conversation_id, body.content, body.image_path, reply, generated_image
+    )
     return {"user_message": user_message, "assistant_message": assistant_message}

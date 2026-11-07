@@ -96,9 +96,16 @@ All `/api/conversations` and `/api/uploads` endpoints require `Authorization: Be
 A LangGraph ReAct loop (`agent` node + `tools` node) in `Backend/agent/`:
 - **Chat model:** `gpt-6-luna` (OpenAI), the last 20 messages of the conversation are sent as context.
 - **Vision:** an attached image is sent to the model together with the text, so you can ask about it.
-- **Tools:** `get_current_datetime`, and `generate_image` – creates an image with `gpt-image-1-mini` (1024×1024, low quality, about half a cent per image) when the user asks to draw something.
+- **Tools:**
+  - `get_current_datetime` – the current date and time.
+  - `get_weather` – current weather and a 7-day forecast for any city, from [Open-Meteo](https://open-meteo.com/) (free, no API key). The agent translates the city name to English (e.g. "מודיעין" → "Modiin"), finds its location, and then gets the forecast.
+  - `generate_image` – creates an image with `gpt-image-1-mini` (1024×1024, low quality, about half a cent per image) when the user asks to draw something.
 
 Images are stored as files in `Backend/uploads/` (not in Git); the database stores only their path.
+
+### Known limitation: image links are public
+
+Image files are served at `/uploads/<random-name>` **without a login check**, because a browser `<img>` tag cannot send the JWT header. The file names are random 128-bit values (UUID), so they cannot be guessed or listed – but anyone who gets the exact link of an image can open it. Messages and conversations themselves are always protected by login.
 
 ## Database design
 
