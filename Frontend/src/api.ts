@@ -1,5 +1,6 @@
 // כל הפניות לשרת במקום אחד. ה-Frontend לא פונה ל-OpenAI ישירות, אלא רק ל-API שלנו.
-const API_URL = "http://localhost:8000/api";
+const SERVER_URL = "http://localhost:8000";
+const API_URL = SERVER_URL + "/api";
 const TOKEN_KEY = "token";
 
 export type Role = "user" | "assistant";
@@ -89,7 +90,9 @@ export function setUnauthorizedHandler(handler: () => void) {
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const headers: Record<string, string> = {};
+  // בקובץ (FormData) הדפדפן קובע את ה-Content-Type בעצמו
+  if (!(options.body instanceof FormData)) headers["Content-Type"] = "application/json";
   if (token) headers.Authorization = `Bearer ${token}`;
 
   let response: Response;
@@ -148,18 +151,34 @@ export function getConversation(id: number) {
 }
 
 // שיחה חדשה נוצרת בשרת רק יחד עם ההודעה הראשונה
-export function createConversation(content: string) {
+export function createConversation(content: string, imagePath: string | null) {
   return request<NewConversationResponse>("/conversations", {
     method: "POST",
-    body: JSON.stringify({ content }),
+    body: JSON.stringify({ content, image_path: imagePath }),
   });
 }
 
-export function sendMessage(conversationId: number, content: string) {
+export function sendMessage(conversationId: number, content: string, imagePath: string | null) {
   return request<SendMessageResponse>(`/conversations/${conversationId}/messages`, {
     method: "POST",
-    body: JSON.stringify({ content }),
+    body: JSON.stringify({ content, image_path: imagePath }),
   });
+}
+
+// ===== תמונות =====
+export const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
+export const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB, כמו בשרת
+
+// מעלה תמונה ומחזיר את הנתיב שלה בשרת, לצירוף להודעה
+export function uploadImage(file: File) {
+  const form = new FormData();
+  form.append("file", file);
+  return request<{ image_path: string }>("/uploads", { method: "POST", body: form });
+}
+
+// כתובת מלאה לתמונה: נתיב מהשרת (/uploads/...), או תצוגה מקדימה מקומית (blob:)
+export function imageUrl(path: string) {
+  return path.startsWith("/uploads/") ? SERVER_URL + path : path;
 }
 
 export function deleteConversation(id: number) {

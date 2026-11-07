@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 
-import { ApiError, createConversation, getConversation, sendMessage } from "../api";
+import { ApiError, createConversation, getConversation, sendMessage, uploadImage } from "../api";
 import type { Message } from "../api";
 import MessageList from "../components/MessageList";
 import ChatInput from "../components/ChatInput";
@@ -11,7 +11,7 @@ import "./ChatPage.css";
 // הצעות לשאלות שמופיעות בשיחה חדשה (לחיצה שולחת אותן)
 const SUGGESTIONS = [
   "Tell me a one-liner programming joke",
-  "Explain React hooks in simple words",
+  "Draw a cozy seaside café at sunset",
   "What day of the week is it today?",
   "כתוב לי שיר קצר על קפה של בוקר",
 ];
@@ -34,7 +34,7 @@ export default function ChatPage({ onConversationsChanged }: Props) {
   const [loadError, setLoadError] = useState("");
   const [notFound, setNotFound] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
-  const [sendError, setSendError] = useState<{ message: string; content: string } | null>(null);
+  const [sendError, setSendError] = useState<{ message: string; content: string; file: File | null } | null>(null);
 
   // האם המסך עדיין פתוח (כדי לא לעדכן מסך שהמשתמש כבר עזב)
   const isActive = useRef(true);
@@ -69,26 +69,29 @@ export default function ChatPage({ onConversationsChanged }: Props) {
     setReloadCount((count) => count + 1);
   }
 
-  async function handleSend(content: string) {
+  async function handleSend(content: string, file: File | null) {
     // אם ההודעה הקודמת נכשלה, מסירים אותה מהמסך (השרת לא שמר אותה)
     if (sendError) setMessages((prev) => prev.slice(0, -1));
     setSendError(null);
-    // ההודעה של המשתמש מוצגת מיד, עוד לפני שהשרת ענה
+    // ההודעה של המשתמש מוצגת מיד, עוד לפני שהשרת ענה (התמונה מוצגת מהמחשב של המשתמש)
     const tempMessage: Message = {
       id: -Date.now(),
       conversation_id: conversationId ?? 0,
       role: "user",
       content,
-      image_path: null,
+      image_path: file ? URL.createObjectURL(file) : null,
       created_at: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, tempMessage]);
     setIsThinking(true);
 
     try {
+      // קודם מעלים את התמונה (אם יש), ואז שולחים את ההודעה עם הנתיב שלה בשרת
+      const imagePath = file ? (await uploadImage(file)).image_path : null;
+
       if (conversationId === null) {
         // שיחה חדשה נוצרת בשרת רק עכשיו, יחד עם ההודעה הראשונה
-        const data = await createConversation(content);
+        const data = await createConversation(content, imagePath);
         onConversationsChanged();
         if (!isActive.current) return;
         navigate(`/c/${data.conversation.id}`, {
@@ -96,7 +99,7 @@ export default function ChatPage({ onConversationsChanged }: Props) {
           state: { messages: [data.user_message, data.assistant_message] },
         });
       } else {
-        const data = await sendMessage(conversationId, content);
+        const data = await sendMessage(conversationId, content, imagePath);
         onConversationsChanged();
         if (!isActive.current) return;
         setMessages((prev) => [
@@ -110,15 +113,16 @@ export default function ChatPage({ onConversationsChanged }: Props) {
       setSendError({
         message: error instanceof Error ? error.message : "Something went wrong. Please try again.",
         content,
+        file,
       });
     } finally {
       if (isActive.current) setIsThinking(false);
     }
   }
 
-  // "נסה שוב": שולחים שוב את אותה הודעה
+  // "נסה שוב": שולחים שוב את אותה הודעה (כולל התמונה)
   function handleRetry() {
-    if (sendError) handleSend(sendError.content);
+    if (sendError) handleSend(sendError.content, sendError.file);
   }
 
   if (notFound) {
@@ -165,7 +169,7 @@ export default function ChatPage({ onConversationsChanged }: Props) {
           <ul className="suggestions" aria-label="Suggestions">
             {SUGGESTIONS.map((text) => (
               <li key={text}>
-                <button type="button" className="suggestion" onClick={() => handleSend(text)} dir="auto">
+                <button type="button" className="suggestion" onClick={() => handleSend(text, null)} dir="auto">
                   {text}
                 </button>
               </li>

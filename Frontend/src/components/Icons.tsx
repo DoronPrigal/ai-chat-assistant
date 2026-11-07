@@ -55,6 +55,14 @@ export function MoonIcon() {
   );
 }
 
+export function PaperclipIcon() {
+  return (
+    <svg {...base}>
+      <path d="m21.4 11.6-8.5 8.5a5.5 5.5 0 0 1-7.8-7.8l8.5-8.5a3.7 3.7 0 0 1 5.2 5.2l-8.5 8.5a1.8 1.8 0 0 1-2.6-2.6l7.8-7.8" />
+    </svg>
+  );
+}
+
 export function LogoutIcon() {
   return (
     <svg {...base}>

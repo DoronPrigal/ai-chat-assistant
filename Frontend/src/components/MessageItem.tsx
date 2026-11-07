@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { imageUrl } from "../api";
 import type { Message } from "../api";
 import { CheckIcon, CopyIcon } from "./Icons";
 
@@ -19,12 +20,27 @@ export default function MessageItem({ message }: { message: Message }) {
   return (
     <article className={isUser ? "message message-user" : "message message-assistant"}>
       <span className="visually-hidden">{isUser ? "You said:" : "Assistant said:"}</span>
-      {/* dir="auto": הודעה בעברית מוצגת מימין לשמאל */}
-      <div className="message-content" dir="auto">
-        {message.content}
-      </div>
 
-      {!isUser && (
+      {/* תמונה שהמשתמש צירף או שהסוכן יצר. לחיצה פותחת אותה בגודל מלא. */}
+      {message.image_path && (
+        <a href={imageUrl(message.image_path)} target="_blank" rel="noreferrer" className="message-image-link">
+          <img
+            src={imageUrl(message.image_path)}
+            alt={isUser ? "Image you attached (opens full size)" : "Image created by the assistant (opens full size)"}
+            className={isUser ? "message-image" : "message-image message-image-generated"}
+            loading="lazy"
+          />
+        </a>
+      )}
+
+      {/* dir="auto": הודעה בעברית מוצגת מימין לשמאל */}
+      {message.content && (
+        <div className="message-content" dir="auto">
+          {message.content}
+        </div>
+      )}
+
+      {!isUser && message.content && (
         <button type="button" className="copy-button" onClick={handleCopy}>
           {copied ? <CheckIcon /> : <CopyIcon />}
           <span aria-live="polite">{copied ? "Copied" : "Copy"}</span>
