@@ -48,6 +48,38 @@ export default function ChatPage({ onConversationsChanged }: Props) {
     };
   }, []);
 
+  // ===== גלילה לסוף השיחה =====
+  // שורת ההקלדה היא חלק מהדף ונמצאת אחרי ההודעות, אז כשגוללים עד סוף הדף ההודעה האחרונה גלויה מעליה
+  const pageRef = useRef<HTMLDivElement>(null);
+  const isAtBottom = useRef(true); // האם המשתמש נמצא עכשיו בסוף השיחה
+
+  function scrollToBottom() {
+    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" });
+  }
+
+  // הודעה חדשה או "חושב...": גוללים עד הסוף
+  useEffect(() => {
+    isAtBottom.current = true;
+    scrollToBottom();
+  }, [messages.length, isThinking]);
+
+  // כשגובה הדף משתנה (שורת ההקלדה גדלה, תמונה צורפה או נטענה) ומי שהיה בסוף - נשאר בסוף
+  useEffect(() => {
+    function handleScroll() {
+      const root = document.documentElement;
+      isAtBottom.current = window.innerHeight + window.scrollY >= root.scrollHeight - 80;
+    }
+    const observer = new ResizeObserver(() => {
+      if (isAtBottom.current) scrollToBottom();
+    });
+    if (pageRef.current) observer.observe(pageRef.current);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
   // טעינת השיחה מהשרת כשהמסך נפתח, ושוב בכל לחיצה על "נסה שוב"
   const [reloadCount, setReloadCount] = useState(0);
   useEffect(() => {
@@ -145,7 +177,7 @@ export default function ChatPage({ onConversationsChanged }: Props) {
   const isEmpty = conversationId === null && messages.length === 0;
 
   return (
-    <div className={isEmpty ? "chat-page is-empty" : "chat-page"}>
+    <div ref={pageRef} className={isEmpty ? "chat-page is-empty" : "chat-page"}>
       <div className="chat-content">
         {/* כותרת ראשית לקורא מסך (במצב ריק יש כותרת גלויה) */}
         {!isEmpty && <h1 className="visually-hidden" dir="auto">{title || "Conversation"}</h1>}
