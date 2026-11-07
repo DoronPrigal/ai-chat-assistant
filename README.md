@@ -52,7 +52,24 @@ Interactive docs: http://localhost:8000/docs
 
 ### 3. Frontend
 
-_Coming in the next stage._
+```powershell
+cd Frontend
+npm install
+npm run dev
+```
+
+Open http://localhost:5173 (the Backend must be running on port 8000).
+
+## API endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/health` | Server and database check |
+| GET | `/api/conversations` | List conversations, newest first |
+| POST | `/api/conversations` | Start a conversation with its first message (created only after the agent answers) |
+| GET | `/api/conversations/{id}` | A conversation with all its messages |
+| POST | `/api/conversations/{id}/messages` | Send a message and get the agent's reply |
+| DELETE | `/api/conversations/{id}` | Delete a conversation and its messages |
 
 ## Database design
 

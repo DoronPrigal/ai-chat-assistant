@@ -1,0 +1,255 @@
+/* ===== משתני עיצוב: כל הצבעים, המרווחים והגדלים במקום אחד ===== */
+:root {
+  /* מצב בהיר */
+  --color-bg: #ffffff;
+  --color-bg-subtle: #f6f7f9;
+  --color-surface: #ffffff;
+  --color-bubble-user: #eef0f4;
+  --color-text: #1f2328;
+  --color-text-muted: #5b6270;
+  --color-border: #e1e4e9;
+  --color-hover: rgba(15, 23, 42, 0.06);
+  --color-primary: #4f46e5;
+  --color-primary-hover: #4338ca;
+  --color-accent: #0891b2;
+  --color-danger: #b42318;
+  --color-danger-bg: #fef3f2;
+  --color-code-bg: #f3f4f6;
+  --gradient: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  --gradient-text: linear-gradient(135deg, #4f46e5, #0e7490);
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(15, 23, 42, 0.08);
+  --shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
+  --backdrop: rgba(15, 23, 42, 0.4);
+
+  /* סולם מרווחים */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* פינות */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-full: 999px;
+
+  /* טיפוגרפיה */
+  --font: "Heebo", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", Consolas, monospace;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.5rem;
+  --text-display: clamp(1.9rem, 5vw, 2.75rem);
+
+  /* פריסה */
+  --header-height: 60px;
+  --sidebar-width: 280px;
+  --content-width: 768px;
+  --duration: 180ms;
+
+  color-scheme: light;
+}
+
+/* מצב כהה */
+:root[data-theme="dark"] {
+  --color-bg: #15161a;
+  --color-bg-subtle: #1b1c21;
+  --color-surface: #1f2026;
+  --color-bubble-user: #2a2c33;
+  --color-text: #ececf1;
+  --color-text-muted: #a3a8b3;
+  --color-border: #30323a;
+  --color-hover: rgba(255, 255, 255, 0.07);
+  --color-primary: #8b85ff;
+  --color-primary-hover: #a5a0ff;
+  --color-accent: #22d3ee;
+  --color-danger: #ff8a80;
+  --color-danger-bg: #3a1f1f;
+  --color-code-bg: #26272e;
+  --gradient: linear-gradient(135deg, #4f46e5, #0891b2);
+  --gradient-text: linear-gradient(135deg, #a5a0ff, #22d3ee);
+  --glass-bg: rgba(27, 28, 33, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+  --backdrop: rgba(0, 0, 0, 0.55);
+
+  color-scheme: dark;
+}
+
+/* ===== בסיס ===== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  font-family: var(--font);
+  font-size: var(--text-base);
+  line-height: 1.6;
+  color: var(--color-text);
+  background: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+  transition: background-color var(--duration), color var(--duration);
+}
+
+h1, h2, h3, p {
+  margin: 0;
+}
+
+a {
+  color: var(--color-primary);
+}
+
+button,
+textarea,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* focus גלוי לניווט במקלדת */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* טקסט שמיועד רק לקוראי מסך */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* קישור דילוג לתוכן הראשי */
+.skip-link {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: 100;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow);
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+/* ===== רכיבים לשימוש חוזר ===== */
+
+/* זכוכית: רק על אלמנטים צפים (כותרת, שורת קלט, סרגל צד) */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border: 1px solid var(--glass-border);
+  transition: background-color var(--duration), border-color var(--duration);
+}
+
+/* כפתור אייקון עגול */
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text-muted);
+  transition: background-color var(--duration), color var(--duration), transform 100ms;
+}
+
+.icon-button:hover {
+  background: var(--color-hover);
+  color: var(--color-text);
+}
+
+.icon-button:active {
+  transform: scale(0.94);
+}
+
+/* כפתור משני (למשל "נסה שוב") */
+.button-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  transition: background-color var(--duration), transform 100ms;
+}
+
+.button-secondary:hover {
+  background: var(--color-hover);
+}
+
+.button-secondary:active {
+  transform: scale(0.97);
+}
+
+/* הודעת שגיאה ידידותית */
+.error-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+}
+
+/* ===== נגישות: תנועה ושקיפות מופחתות ===== */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass {
+    background: var(--color-surface);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}

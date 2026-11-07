@@ -31,3 +31,7 @@ class ConversationDetail(ConversationOut):
 class SendMessageResponse(BaseModel):
     user_message: MessageOut
     assistant_message: MessageOut
+
+
+class NewConversationResponse(SendMessageResponse):
+    conversation: ConversationOut

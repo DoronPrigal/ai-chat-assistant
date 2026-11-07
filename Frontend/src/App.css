@@ -1,0 +1,224 @@
+/* ===== פריסה כללית: כותרת עליונה, סרגל צד ותוכן ===== */
+
+.main {
+  transition: margin-left var(--duration) ease;
+}
+
+.main:focus {
+  outline: none;
+}
+
+/* במחשב: כשהסרגל פתוח, התוכן זז ימינה כדי לפנות לו מקום */
+@media (min-width: 900px) {
+  .sidebar-open .main {
+    margin-left: var(--sidebar-width);
+  }
+}
+
+/* ===== כותרת עליונה ===== */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--header-height);
+  padding: 0 var(--space-3);
+  border-width: 0 0 1px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-right: auto;
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-weight: 700;
+  font-size: var(--text-lg);
+  text-decoration: none;
+}
+
+.main-nav {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.nav-link {
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color var(--duration), color var(--duration);
+}
+
+.nav-link:hover {
+  background: var(--color-hover);
+  color: var(--color-text);
+}
+
+.nav-link[aria-current="page"] {
+  background: var(--color-hover);
+  color: var(--color-text);
+}
+
+/* במסך צר מאוד מסתירים את שם האתר ומשאירים את הלוגו */
+@media (max-width: 399px) {
+  .brand-name {
+    display: none;
+  }
+}
+
+/* ===== סרגל השיחות ===== */
+.sidebar {
+  position: fixed;
+  top: var(--header-height);
+  bottom: 0;
+  left: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: var(--sidebar-width);
+  padding: var(--space-3);
+  overflow-y: auto;
+  border-width: 0 1px 0 0;
+  transform: translateX(-100%);
+  visibility: hidden;
+  /* ההסתרה (visibility) מחכה לסוף ההחלקה */
+  transition: transform var(--duration) ease, visibility 0s linear var(--duration), background-color var(--duration);
+}
+
+.sidebar.open {
+  transform: none;
+  visibility: visible;
+  transition: transform var(--duration) ease, visibility 0s, background-color var(--duration);
+}
+
+/* בנייד: מגירה מעל התוכן, עם רקע כהה מאחוריה */
+@media (max-width: 899px) {
+  .sidebar {
+    top: 0;
+    z-index: 50;
+    width: min(85vw, 300px);
+    background: var(--color-surface);
+    box-shadow: var(--shadow);
+  }
+}
+
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: var(--backdrop);
+  animation: fade-in var(--duration) ease;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.new-chat-button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 10px var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color var(--duration), transform 100ms;
+}
+
+.new-chat-button:hover {
+  background: var(--color-bg-subtle);
+}
+
+.new-chat-button:active {
+  transform: scale(0.98);
+}
+
+.sidebar-heading {
+  margin-top: var(--space-3);
+  padding: 0 10px;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sidebar-empty {
+  padding: 0 10px;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.conversation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.conversation-item {
+  display: flex;
+  align-items: center;
+  border-radius: var(--radius-sm);
+  transition: background-color var(--duration);
+}
+
+.conversation-item:hover,
+.conversation-item:focus-within {
+  background: var(--color-hover);
+}
+
+.conversation-link {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-2) 10px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* השיחה הפתוחה (NavLink מוסיף class="active") */
+.conversation-link.active {
+  background: var(--color-hover);
+  font-weight: 500;
+}
+
+/* כפתור המחיקה מופיע במעבר עכבר, בפוקוס או על השיחה הפתוחה */
+.delete-button {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  opacity: 0;
+}
+
+.conversation-item:hover .delete-button,
+.conversation-item:focus-within .delete-button,
+.conversation-link.active + .delete-button {
+  opacity: 1;
+}
+
+/* במסכי מגע אין "מעבר עכבר", אז הכפתור תמיד גלוי */
+@media (hover: none) {
+  .delete-button {
+    opacity: 1;
+  }
+}
