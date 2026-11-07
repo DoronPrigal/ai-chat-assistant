@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config import FRONTEND_URL
 from db.database import get_db, create_tables
-from routes import conversations
+from routes import auth, conversations
 
 
 @asynccontextmanager
@@ -24,6 +24,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth.router)
 app.include_router(conversations.router)
 
 

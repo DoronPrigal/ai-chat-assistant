@@ -15,5 +15,7 @@ DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_NAME = os.getenv("DB_NAME", "chat_db")
 
 JWT_SECRET = os.getenv("JWT_SECRET")
+if not JWT_SECRET or len(JWT_SECRET) < 32:
+    raise RuntimeError("JWT_SECRET in Backend/.env is missing or shorter than 32 characters")
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
