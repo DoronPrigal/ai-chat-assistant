@@ -1,18 +1,24 @@
 import { aboutMe } from "../aboutMe";
+import { useDocumentTitle } from "../useDocumentTitle";
 import "./AboutPage.css";
 
-const TECHNOLOGIES = ["React", "TypeScript", "Vite", "Python", "FastAPI", "Pydantic", "LangGraph", "OpenAI", "MySQL", "Docker"];
+const TECHNOLOGIES = [
+  "React", "TypeScript", "Vite", "Python", "FastAPI", "Pydantic", "LangGraph", "OpenAI", "MySQL", "JWT", "Open-Meteo", "Docker",
+];
 
 const FEATURES = [
   "Conversations that keep their context",
-  "Multiple chats you can return to",
+  "Your own account – only you see your chats",
+  "Send an image and ask about it",
+  "Ask it to draw an image for you",
+  "Live weather for any city",
   "Answers in your language (English or Hebrew)",
-  "Light and dark mode",
-  "Keyboard and screen reader friendly",
+  "Light and dark mode, keyboard and screen reader friendly",
   "Works on mobile and desktop",
 ];
 
 export default function AboutPage() {
+  useDocumentTitle("About");
   return (
     <div className="about">
       <header className="about-hero">

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { imageUrl } from "../api";
 import type { Message } from "../api";
 import { CheckIcon, CopyIcon } from "./Icons";
+import Markdown from "./Markdown";
 
 export default function MessageItem({ message }: { message: Message }) {
   const [copied, setCopied] = useState(false);
@@ -33,10 +34,16 @@ export default function MessageItem({ message }: { message: Message }) {
         </a>
       )}
 
-      {/* dir="auto": הודעה בעברית מוצגת מימין לשמאל */}
-      {message.content && (
+      {/* הודעת המשתמש כטקסט רגיל, ותשובת הסוכן כ-Markdown (רשימות, הדגשה, קוד וטבלאות).
+          dir="auto": הודעה בעברית מוצגת מימין לשמאל */}
+      {message.content && isUser && (
         <div className="message-content" dir="auto">
           {message.content}
+        </div>
+      )}
+      {message.content && !isUser && (
+        <div className="message-content">
+          <Markdown text={message.content} />
         </div>
       )}
 

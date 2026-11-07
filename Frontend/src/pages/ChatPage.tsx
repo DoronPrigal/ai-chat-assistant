@@ -6,6 +6,7 @@ import type { Message } from "../api";
 import MessageList from "../components/MessageList";
 import ChatInput from "../components/ChatInput";
 import EmptyState from "../components/EmptyState";
+import { useDocumentTitle } from "../useDocumentTitle";
 import "./ChatPage.css";
 
 // הצעות לשאלות שמופיעות בשיחה חדשה (לחיצה שולחת אותן)
@@ -33,6 +34,8 @@ export default function ChatPage({ onConversationsChanged }: Props) {
   const [isLoading, setIsLoading] = useState(conversationId !== null && !passedMessages);
   const [loadError, setLoadError] = useState("");
   const [notFound, setNotFound] = useState(false);
+  const [title, setTitle] = useState(""); // כותרת השיחה (ללשונית הדפדפן ולקורא מסך)
+  useDocumentTitle(conversationId === null ? "New chat" : title);
   const [isThinking, setIsThinking] = useState(false);
   const [sendError, setSendError] = useState<{ message: string; content: string; file: File | null } | null>(null);
 
@@ -51,7 +54,9 @@ export default function ChatPage({ onConversationsChanged }: Props) {
     if (conversationId === null) return;
     getConversation(conversationId)
       .then((data) => {
-        if (isActive.current) setMessages(data.messages);
+        if (!isActive.current) return;
+        setMessages(data.messages);
+        setTitle(data.title);
       })
       .catch((error) => {
         if (!isActive.current) return;
@@ -142,6 +147,8 @@ export default function ChatPage({ onConversationsChanged }: Props) {
   return (
     <div className={isEmpty ? "chat-page is-empty" : "chat-page"}>
       <div className="chat-content">
+        {/* כותרת ראשית לקורא מסך (במצב ריק יש כותרת גלויה) */}
+        {!isEmpty && <h1 className="visually-hidden" dir="auto">{title || "Conversation"}</h1>}
         {isEmpty && <EmptyState />}
 
         {isLoading && <p className="chat-status" role="status">Loading conversation…</p>}

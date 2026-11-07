@@ -6,7 +6,6 @@ import { CloseIcon, PlusIcon, TrashIcon } from "./Icons";
 interface Props {
   open: boolean;
   isMobile: boolean;
-  username: string;
   conversations: Conversation[];
   error: string;
   onRetry: () => void;
@@ -14,7 +13,7 @@ interface Props {
   onClose: () => void;
 }
 
-export default function Sidebar({ open, isMobile, username, conversations, error, onRetry, onDelete, onClose }: Props) {
+export default function Sidebar({ open, isMobile, conversations, error, onRetry, onDelete, onClose }: Props) {
   const newChatRef = useRef<HTMLAnchorElement>(null);
   const isDrawer = isMobile && open;
 
@@ -81,16 +80,7 @@ export default function Sidebar({ open, isMobile, username, conversations, error
               </button>
             </li>
           ))}
-        </ul>
-
-        {/* מי מחובר כרגע */}
-        <div className="sidebar-footer">
-          <span className="avatar" aria-hidden="true">{username.charAt(0).toUpperCase()}</span>
-          <span>
-            Signed in as <strong dir="auto">{username}</strong>
-          </span>
-        </div>
-      </aside>
+        </ul>      </aside>
     </>
   );
 }
