@@ -1,5 +1,5 @@
 from langchain_openai import ChatOpenAI
-from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, ToolMessage
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, AIMessageChunk, ToolMessage
 from langgraph.graph import StateGraph, MessagesState, START, END
 from langgraph.prebuilt import ToolNode
 
@@ -61,9 +61,8 @@ def to_human_message(text, image_path):
     ])
 
 
-def get_reply(history, user_text, image_path=None):
-    """ממיר את ההיסטוריה מה-DB להודעות LangChain, מריץ את הגרף,
-    ומחזיר את התשובה הסופית ואת נתיב התמונה שהסוכן יצר (אם יצר)."""
+def to_langchain_messages(history, user_text, image_path):
+    """ממיר את ההיסטוריה מה-DB להודעות LangChain, ומוסיף בסוף את ההודעה החדשה."""
     messages = []
     for message in history:
         if message["role"] == "user":
@@ -74,6 +73,26 @@ def get_reply(history, user_text, image_path=None):
                 text += "\n[An image was generated and shown to the user here.]"
             messages.append(AIMessage(content=text))
     messages.append(to_human_message(user_text, image_path))
+    return messages
+
+
+def is_generated_image(message):
+    """האם זו התוצאה של הכלי generate_image (נתיב של תמונה שנשמרה)."""
+    return isinstance(message, ToolMessage) and message.name == "generate_image" \
+        and message.text.startswith("/uploads/")
+
+
+def keep_last_image(generated_images):
+    """נשמרת תמונה אחת להודעה. אם נוצרו כמה (נדיר), שומרים את האחרונה ומוחקים את השאר."""
+    for path in generated_images[:-1]:
+        delete_image(path)
+    return generated_images[-1] if generated_images else None
+
+
+def get_reply(history, user_text, image_path=None):
+    """מריץ את הגרף ומחזיר את התשובה המלאה ואת נתיב התמונה שהסוכן יצר (אם יצר).
+    משמש את ה-Endpoints הרגילים (בלי Streaming)."""
+    messages = to_langchain_messages(history, user_text, image_path)
 
     # stream עם "updates": מקבלים כל הודעה חדשה מיד כשצומת בגרף מסיים (agent או tools),
     # כדי לדעת על תמונה שנוצרה גם אם הריצה נכשלת אחריה
@@ -84,9 +103,7 @@ def get_reply(history, user_text, image_path=None):
             for node_output in update.values():
                 for message in node_output["messages"]:
                     last_message = message
-                    # התוצאה של generate_image היא נתיב התמונה שנשמרה
-                    if isinstance(message, ToolMessage) and message.name == "generate_image" \
-                            and message.text.startswith("/uploads/"):
+                    if is_generated_image(message):
                         generated_images.append(message.text)
     except Exception:
         # הסוכן נכשל אחרי שתמונה כבר נוצרה: מוחקים את הקובץ, כדי שלא יישאר קובץ בלי הודעה
@@ -94,8 +111,35 @@ def get_reply(history, user_text, image_path=None):
             delete_image(path)
         raise
 
-    # נשמרת תמונה אחת להודעה. אם נוצרו כמה (נדיר), שומרים את האחרונה ומוחקים את השאר.
-    for path in generated_images[:-1]:
-        delete_image(path)
-    generated_image = generated_images[-1] if generated_images else None
-    return last_message.text, generated_image
+    return last_message.text, keep_last_image(generated_images)
+
+
+def stream_reply(history, user_text, image_path=None):
+    """Streaming: מחזיר את התשובה מילה אחר מילה, בעזרת stream_mode="messages".
+    זה Generator שמחזיר אירועים (dict):
+      {"type": "tool", "name": ...}   - הסוכן מפעיל כלי (לחיווי כמו "Checking the weather…")
+      {"type": "token", "text": ...}  - עוד חלק מהתשובה
+      {"type": "answer", "text": ..., "image": ...} - בסוף: התשובה המלאה ונתיב התמונה (אם נוצרה)"""
+    messages = to_langchain_messages(history, user_text, image_path)
+    generated_images = []
+    answer = ""
+    finished = False
+    try:
+        for chunk, metadata in agent_app.stream({"messages": messages}, stream_mode="messages"):
+            if is_generated_image(chunk):
+                generated_images.append(chunk.text)
+            elif isinstance(chunk, AIMessageChunk) and metadata["langgraph_node"] == "agent":
+                for tool_call in chunk.tool_call_chunks:
+                    if tool_call.get("name"):
+                        answer = ""  # טקסט שנכתב לפני הפעלת כלי אינו חלק מהתשובה הסופית
+                        yield {"type": "tool", "name": tool_call["name"]}
+                if chunk.text:
+                    answer += chunk.text
+                    yield {"type": "token", "text": chunk.text}
+        finished = True
+        yield {"type": "answer", "text": answer, "image": keep_last_image(generated_images)}
+    finally:
+        # כשל של OpenAI או משתמש שסגר את הדף לפני סוף התשובה: מוחקים תמונות שנוצרו ולא יישמרו
+        if not finished:
+            for path in generated_images:
+                delete_image(path)

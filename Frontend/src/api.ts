@@ -88,7 +88,8 @@ export function setUnauthorizedHandler(handler: () => void) {
   handleUnauthorized = handler;
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+// שולח בקשה לשרת ומחזיר את התשובה. שגיאה (או שרת שלא זמין) הופכת ל-ApiError עם הודעה ברורה.
+async function send(path: string, options: RequestInit = {}): Promise<Response> {
   const token = getToken();
   const headers: Record<string, string> = {};
   // בקובץ (FormData) הדפדפן קובע את ה-Content-Type בעצמו
@@ -117,7 +118,12 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     if (response.status === 401 && token && !isLoginOrRegister && handleUnauthorized) handleUnauthorized();
     throw new ApiError(message, response.status);
   }
+  return response;
+}
 
+// בקשה רגילה: התשובה היא JSON
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const response = await send(path, options);
   if (response.status === 204) return undefined as T;
   return response.json();
 }
@@ -150,19 +156,58 @@ export function getConversation(id: number) {
   return request<ConversationDetail>(`/conversations/${id}`);
 }
 
-// שיחה חדשה נוצרת בשרת רק יחד עם ההודעה הראשונה
-export function createConversation(content: string, imagePath: string | null) {
-  return request<NewConversationResponse>("/conversations", {
-    method: "POST",
-    body: JSON.stringify({ content, image_path: imagePath }),
-  });
-}
+// ===== Streaming: התשובה מגיעה מילה אחר מילה =====
+// השרת שולח שורת JSON לכל אירוע (NDJSON):
+//   tool  - הסוכן מפעיל כלי (למשל get_weather)
+//   token - עוד חלק מהתשובה
+//   done  - התשובה נשמרה: ההודעות השמורות (ובשיחה חדשה גם השיחה)
+//   error - הסוכן נכשל באמצע
+export type StreamEvent =
+  | { type: "tool"; name: string }
+  | { type: "token"; text: string }
+  | ({ type: "done"; conversation?: Conversation } & SendMessageResponse)
+  | { type: "error"; message: string };
 
-export function sendMessage(conversationId: number, content: string, imagePath: string | null) {
-  return request<SendMessageResponse>(`/conversations/${conversationId}/messages`, {
-    method: "POST",
-    body: JSON.stringify({ content, image_path: imagePath }),
-  });
+export type StreamDone = Extract<StreamEvent, { type: "done" }>;
+
+// שולח הודעה ומעביר כל אירוע ל-onEvent. מחזיר את אירוע הסיום (ההודעות השמורות).
+// בלי conversationId: שיחה חדשה, שנשמרת רק בסוף התשובה.
+export async function streamMessage(
+  conversationId: number | null,
+  content: string,
+  imagePath: string | null,
+  onEvent: (event: StreamEvent) => void,
+): Promise<StreamDone> {
+  const path = conversationId === null ? "/conversations/stream" : `/conversations/${conversationId}/messages/stream`;
+  const response = await send(path, { method: "POST", body: JSON.stringify({ content, image_path: imagePath }) });
+
+  const reader = response.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = ""; // חלק של שורה שעוד לא הגיעה עד הסוף
+  let done: StreamDone | null = null;
+
+  try {
+    while (true) {
+      const { value, done: finished } = await reader.read();
+      if (finished) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        const event: StreamEvent = JSON.parse(line);
+        if (event.type === "error") throw new ApiError(event.message, 502);
+        if (event.type === "done") done = event;
+        onEvent(event);
+      }
+    }
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    throw new ApiError("The connection was interrupted. Please try again.", 0);
+  }
+
+  if (!done) throw new ApiError("The answer was interrupted. Please try again.", 0);
+  return done;
 }
 
 // ===== תמונות =====
