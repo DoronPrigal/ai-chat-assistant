@@ -1,33 +1,41 @@
 import { Link, useLocation } from "react-router-dom";
+import type { User } from "../api";
 import ThemeToggle from "./ThemeToggle";
-import { PlusIcon, SidebarIcon } from "./Icons";
+import { LogoutIcon, PlusIcon, SidebarIcon } from "./Icons";
 
 interface Props {
+  user: User | null;
   sidebarOpen: boolean;
   onToggleSidebar: () => void;
+  onLogout: () => void;
 }
 
-export default function Header({ sidebarOpen, onToggleSidebar }: Props) {
+export default function Header({ user, sidebarOpen, onToggleSidebar, onLogout }: Props) {
   const { pathname } = useLocation();
   const isChat = pathname === "/" || pathname.startsWith("/c/");
 
   return (
-    <header className="header glass">
-      <button
-        type="button"
-        className="icon-button"
-        onClick={onToggleSidebar}
-        aria-label={sidebarOpen ? "Hide conversations" : "Show conversations"}
-        aria-expanded={sidebarOpen}
-        aria-controls="sidebar"
-      >
-        <SidebarIcon />
-      </button>
+    <header className={user ? "header glass has-user" : "header glass"}>
+      {/* הכפתורים של הצ'אט מוצגים רק למשתמש מחובר */}
+      {user && (
+        <>
+          <button
+            type="button"
+            className="icon-button"
+            onClick={onToggleSidebar}
+            aria-label={sidebarOpen ? "Hide conversations" : "Show conversations"}
+            aria-expanded={sidebarOpen}
+            aria-controls="sidebar"
+          >
+            <SidebarIcon />
+          </button>
 
-      {/* "שיחה חדשה" זמין תמיד, גם כשסרגל השיחות מוסתר */}
-      <Link to="/" className="icon-button" aria-label="New chat" title="New chat">
-        <PlusIcon />
-      </Link>
+          {/* "שיחה חדשה" זמין תמיד, גם כשסרגל השיחות מוסתר */}
+          <Link to="/" className="icon-button" aria-label="New chat" title="New chat">
+            <PlusIcon />
+          </Link>
+        </>
+      )}
 
       <Link to="/" className="brand" aria-label="AI Chat – home">
         <img src="/favicon.svg" alt="" width={28} height={28} />
@@ -40,6 +48,18 @@ export default function Header({ sidebarOpen, onToggleSidebar }: Props) {
       </nav>
 
       <ThemeToggle />
+
+      {user && (
+        <button
+          type="button"
+          className="icon-button"
+          onClick={onLogout}
+          aria-label={`Log out (${user.username})`}
+          title={`Log out (${user.username})`}
+        >
+          <LogoutIcon />
+        </button>
+      )}
     </header>
   );
 }
