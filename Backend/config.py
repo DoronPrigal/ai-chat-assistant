@@ -7,6 +7,10 @@ load_dotenv(Path(__file__).parent / ".env")
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-6-luna")
+OPENAI_IMAGE_MODEL = os.getenv("OPENAI_IMAGE_MODEL", "gpt-image-1-mini")
+
+# תמונות שהמשתמשים מעלים או שהסוכן יוצר. ב-DB נשמר רק הנתיב.
+UPLOADS_DIR = Path(__file__).parent / "uploads"
 
 DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = int(os.getenv("DB_PORT", "3306"))

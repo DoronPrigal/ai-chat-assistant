@@ -3,10 +3,11 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
-from config import FRONTEND_URL
+from config import FRONTEND_URL, UPLOADS_DIR
 from db.database import get_db, create_tables
-from routes import auth, conversations
+from routes import auth, conversations, uploads
 
 
 @asynccontextmanager
@@ -35,6 +36,11 @@ async def validation_error(request: Request, exc: RequestValidationError):
 
 app.include_router(auth.router)
 app.include_router(conversations.router)
+app.include_router(uploads.router)
+
+# התמונות מוגשות בכתובת /uploads/<שם אקראי>. שם הקובץ אקראי ולא ניתן לניחוש.
+UPLOADS_DIR.mkdir(exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 
 
 @app.get("/api/health")
