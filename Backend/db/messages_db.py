@@ -1,3 +1,6 @@
+import mysql.connector
+from fastapi import HTTPException
+
 from db.database import get_db
 
 # שימו לב: הפונקציות כאן לא בודקות למי השיחה שייכת.
@@ -44,19 +47,28 @@ def get_image_paths(conversation_id):
     return paths
 
 
-def add_message(conversation_id, role, content, image_path=None):
-    """שומר הודעה ומעדכן את זמן העדכון של השיחה (למיון רשימת השיחות)."""
+def add_exchange(conversation_id, user_content, user_image, reply, reply_image):
+    """שומר את הודעת המשתמש ואת תשובת הסוכן יחד, בטרנזקציה אחת: או ששתיהן נשמרות, או אף אחת.
+    בנוסף מעדכן את זמן העדכון של השיחה (למיון רשימת השיחות)."""
+    sql = "INSERT INTO messages (conversation_id, role, content, image_path) VALUES (%s, %s, %s, %s)"
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute(
-        "INSERT INTO messages (conversation_id, role, content, image_path) VALUES (%s, %s, %s, %s)",
-        (conversation_id, role, content, image_path),
-    )
-    message_id = cursor.lastrowid
-    cursor.execute("UPDATE conversations SET updated_at = NOW() WHERE id = %s", (conversation_id,))
-    conn.commit()
-    cursor.execute("SELECT * FROM messages WHERE id = %s", (message_id,))
-    message = cursor.fetchone()
+    try:
+        cursor.execute(sql, (conversation_id, "user", user_content, user_image))
+        user_message_id = cursor.lastrowid
+        cursor.execute(sql, (conversation_id, "assistant", reply, reply_image))
+        reply_id = cursor.lastrowid
+        cursor.execute("UPDATE conversations SET updated_at = NOW() WHERE id = %s", (conversation_id,))
+        conn.commit()
+    except mysql.connector.IntegrityError:
+        # השיחה נמחקה בזמן שהסוכן ענה (המפתח הזר כבר לא קיים)
+        conn.rollback()
+        cursor.close()
+        conn.close()
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    cursor.execute("SELECT * FROM messages WHERE id IN (%s, %s) ORDER BY id", (user_message_id, reply_id))
+    user_message, reply_message = cursor.fetchall()
     cursor.close()
     conn.close()
-    return message
+    return user_message, reply_message
