@@ -1,0 +1,174 @@
+/* ===== דף האודות: Bento Box Grid ===== */
+.about {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: var(--space-7) var(--space-4) var(--space-8);
+}
+
+.about-hero {
+  margin-bottom: var(--space-6);
+}
+
+.about-hero h1 {
+  font-size: var(--text-display);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  background: var(--gradient-text);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.about-hero p {
+  max-width: 60ch;
+  margin-top: var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--text-lg);
+}
+
+@media (forced-colors: active) {
+  .about-hero h1 {
+    background: none;
+    color: CanvasText;
+  }
+}
+
+.bento {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+}
+
+@media (min-width: 640px) {
+  .bento {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .card-wide {
+    grid-column: span 2;
+  }
+}
+
+@media (min-width: 1024px) {
+  .bento {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  transition: background-color var(--duration), border-color var(--duration);
+}
+
+/* פס גרדיאנט עדין בראש כל כרטיס */
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: var(--gradient);
+}
+
+.card h2 {
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.card p {
+  color: var(--color-text-muted);
+}
+
+.card a:not(.button-secondary) {
+  margin-top: auto;
+  padding-top: var(--space-2);
+  font-weight: 500;
+}
+
+/* כרטיס "עליי" מודגש בגרדיאנט עדין */
+.card-me {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 8%, transparent), color-mix(in srgb, var(--color-accent) 8%, transparent)),
+    var(--color-surface);
+}
+
+.card .me-name {
+  color: var(--color-text);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.me-role {
+  font-weight: 500;
+}
+
+.me-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: auto;
+  padding-top: var(--space-2);
+}
+
+.me-links a {
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chips li {
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-bg-subtle);
+  font-size: var(--text-sm);
+}
+
+.feature-list {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.feature-list li {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.feature-list li::before {
+  content: "✓";
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.flow {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding-left: var(--space-5);
+  color: var(--color-text-muted);
+}
+
+.flow li::marker {
+  color: var(--color-primary);
+  font-weight: 700;
+}

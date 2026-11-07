@@ -2,10 +2,10 @@ from fastapi import HTTPException
 from db.database import get_db
 
 
-def create_conversation():
+def create_conversation(title):
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("INSERT INTO conversations (title) VALUES (%s)", ("New chat",))
+    cursor.execute("INSERT INTO conversations (title) VALUES (%s)", (title,))
     conn.commit()
     cursor.execute("SELECT * FROM conversations WHERE id = %s", (cursor.lastrowid,))
     conversation = cursor.fetchone()
@@ -35,15 +35,6 @@ def get_conversation(conversation_id):
     if conversation is None:
         raise HTTPException(status_code=404, detail="Conversation not found")
     return conversation
-
-
-def update_title(conversation_id, title):
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE conversations SET title = %s WHERE id = %s", (title, conversation_id))
-    conn.commit()
-    cursor.close()
-    conn.close()
 
 
 def delete_conversation(conversation_id):
