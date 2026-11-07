@@ -1,27 +1,26 @@
 /* ===== משתני עיצוב: כל הצבעים, המרווחים והגדלים במקום אחד ===== */
 :root {
   /* מצב בהיר: פלטה חמימה ורכה בהשראת Mediterranea (Dusk Light) */
-  --color-bg: #f1ebe1;
-  --color-bg-subtle: #ded4c4;
-  --color-surface: #e8e0d3;
-  --color-bubble-user: #e2d8c8;
+  --color-bg: #ded6c8;
+  --color-bg-subtle: #cbc1b1;
+  --color-surface: #d3cabb;
+  --color-bubble-user: #c9bdaa;
   --color-text: #2b2622;
-  --color-text-muted: #5e554c;
-  --color-border: #d3c8b6;
-  --color-hover: rgba(43, 38, 34, 0.07);
-  /* כחול ים: #2F6F8F הוכהה ל-#29627E כדי להגיע ל-4.5:1 גם על המשטחים */
-  --color-primary: #29627e;
-  --color-primary-hover: #214f66;
-  --color-accent: #2d7a6e;
-  --color-danger: #a12a1c;
-  --color-danger-bg: #f3dcd2;
-  --color-code-bg: #e2d8c8;
+  --color-text-muted: #4e453c;
+  --color-border: #bcaf9b;
+  --color-hover: rgba(43, 38, 34, 0.08);
+  --color-primary: #1f4d64; /* כחול ים */
+  --color-primary-hover: #173b4d;
+  --color-accent: #256b61; /* טורקיז ים-תיכוני, לגרדיאנט */
+  --color-danger: #8e2418;
+  --color-danger-bg: #ecd2c6;
+  --color-code-bg: #cbc1b1;
   --gradient: linear-gradient(135deg, var(--color-primary), var(--color-accent));
   --gradient-text: linear-gradient(135deg, var(--color-primary), var(--color-accent));
-  --glass-bg: rgba(232, 224, 211, 0.75);
-  --glass-border: rgba(43, 38, 34, 0.08);
-  --shadow: 0 8px 30px rgba(60, 45, 30, 0.1);
-  --backdrop: rgba(43, 38, 34, 0.4);
+  --glass-bg: rgba(211, 202, 187, 0.78);
+  --glass-border: rgba(43, 38, 34, 0.1);
+  --shadow: 0 8px 30px rgba(50, 38, 25, 0.14);
+  --backdrop: rgba(43, 38, 34, 0.45);
 
   /* סולם מרווחים */
   --space-1: 4px;
