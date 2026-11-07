@@ -14,6 +14,9 @@ dist/
 # קבצים שהמשתמשים מעלים או שהסוכן יוצר
 Backend/uploads/
 
+# צילומי מסך שהבדיקות יוצרות (node_modules כבר מוחרג למעלה)
+tests/shots/
+
 # אפיון המרצה
 spec.pdf
 

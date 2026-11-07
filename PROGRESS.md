@@ -22,7 +22,7 @@
 2. `onLoad` על התמונה: אם המשתמש היה בסוף, גוללים שוב לסוף. אפשר להעביר מ-`ChatPage` פונקציה, או לשלוח אירוע.
 3. לשקול `loading="eager"` להודעה האחרונה, ולהשאיר `lazy` לשאר. CLAUDE.md דורש `lazy` לתמונות בהודעות, אז לא לבטל לגמרי.
 
-**איך לבדוק:** בדיקה עם `lastVisible` כמו ב-`fixes_ui.mjs` (ראו בהמשך): ה-`bottom` של ההודעה האחרונה צריך להיות `<=` ה-`top` של `.chat-input`, אחרי יצירת תמונה. כדי לא לבזבז, אפשר להכניס ל-DB הודעת assistant עם `image_path` של תמונה קיימת, בלי ליצור תמונה חדשה. בודקים במחשב ובנייד (360px).
+**איך לבדוק:** בדיקה עם `lastVisible` כמו ב-`tests/fixes_ui.mjs`: ה-`bottom` של ההודעה האחרונה צריך להיות `<=` ה-`top` של `.chat-input`, אחרי יצירת תמונה. כדי לא לבזבז, אפשר להכניס ל-DB הודעת assistant עם `image_path` של תמונה קיימת, בלי ליצור תמונה חדשה. בודקים במחשב ובנייד (360px).
 
 ---
 
@@ -166,36 +166,15 @@ cd Frontend; npm run lint; npm run build               # בדיקה סטטית (
 
 ## בדיקות
 
-**הסקריפטים לא נמצאים בפרויקט.** הם בתיקייה הזמנית של הסשן הקודם, וייתכן שהיא כבר לא קיימת:
-`C:\Users\doron\AppData\Local\Temp\claude\8c7eb5162fac8ed6\4b3c2940-048b-4c93-8933-8e7bb9968571\scratchpad\`
+**כל הסקריפטים נמצאים בתיקייה [`tests/`](tests/).** ההוראות המלאות ב-[`tests/README.md`](tests/README.md): מה בודק כל סקריפט, איך מריצים, ואילו בדיקות עולות כסף.
 
-- `uitest\node_modules`: ‏`playwright-core` ו-`axe-core` (הותקנו שם, לא בפרויקט).
-- `scripts\`: הסקריפטים עצמם.
-
-**סקריפטים בדפדפן** (Playwright מפעיל את Edge המותקן, `channel: "msedge"`, ‏headless). מריצים עם `node <script>.mjs`:
-
-| סקריפט | מה הוא בודק |
-|---|---|
-| `e2e.mjs` | רגרסיה של שלב 3: צ'אט, הקשר, סרגל, מצב כהה, אודות, שגיאות, מחיקה, נייד |
-| `auth_ui.mjs`, ‏`auth_fixes_ui.mjs` | התחברות, הרשמה, טוקן שפג תוקפו |
-| `images_ui.mjs` | העלאה, Vision, ו**יצירת תמונה אחת** (עולה כסף) |
-| `polish_ui.mjs` | Markdown, תפריט משתמש, מזג אוויר |
-| `fixes_ui.mjs <token> <cid>` | גלילה וכיוון קוד. קודם להריץ את `seed_long_chat.py` מתוך Backend, שמחזיר token ו-cid |
-| `drawer_logo.mjs <token>` | מיקום כפתור ה-X במגירה, והלוגו |
-| `bonus_ui.mjs` | Streaming, קול (מדומה) ו-Error Boundary |
-| `axe_audit.mjs` | נגישות WCAG 2.1 AA, ב-18 מסכים |
-| `responsive.mjs` | חמישה רוחבי מסך |
-
-**סקריפטי Python** (מריצים עם `Backend\env\Scripts\python.exe`):
-
-| סקריפט | מה הוא בודק |
-|---|---|
-| `auth_test.py` | התחברות ושיחות דרך ה-API |
-| `upload_test.py` | העלאות |
-| `stream_test.py [port]` | Streaming |
-| `weather_test.py` | כלי מזג האוויר |
-| `orphan_cleanup_test.py`, ‏`stream_cleanup_test.py` | ניקוי תמונות בסימולציה, בלי עלות |
-| `contrast_css.py <index.css>` | ניגודיות של כל זוגות הצבעים |
+- **התקנה, פעם אחת:** `cd tests; npm install`. מתקין את `playwright-core` ואת `axe-core`. ‏`node_modules` ו-`tests/shots/` מוחרגים מ-Git.
+- **הרצה:** תמיד מתוך התיקייה `tests`.
+  - סקריפטי דפדפן: `node <script>.mjs`. ‏Playwright מפעיל את Edge המותקן במחשב, ב-headless.
+  - סקריפטי Python: `..\Backend\env\Scripts\python.exe <script>.py`.
+- **בסוף כל סבב בדיקות:** `..\Backend\env\Scripts\python.exe cleanup.py`. הסקריפט מוחק משתמשי בדיקה לפי הקידומת, ותמונות ששום הודעה לא מפנה אליהן. המשתמשים `doron` ו-`admin` נשמרים.
+- **אין בסקריפטים סודות:** סוד ה-JWT נקרא מ-`Backend/.env` דרך `config.py`. הסיסמאות בסקריפטים שייכות רק למשתמשי בדיקה זמניים.
+- **אימות:** אחרי ההעברה הרצתי בהצלחה את `contrast_css.py`, ‏`auth_test.py`, ‏`axe_audit.mjs` (‏0 הפרות) ואת `cleanup.py`.
 
 **לקחים מהבדיקות:**
 - **לחכות למצב סופי, לא לבדוק מיד.** הרבה כשלים היו מרוץ בבדיקה.
