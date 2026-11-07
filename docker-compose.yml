@@ -1,0 +1,28 @@
+# MySQL ו-phpMyAdmin לפיתוח מקומי בלבד. ה-API וה-Frontend רצים בלי Docker.
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: chat_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: chat_root_pass   # סיסמה מקומית לפיתוח, זהה ל-DB_PASSWORD ב-Backend/.env
+      MYSQL_DATABASE: chat_db
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  phpmyadmin:
+    image: phpmyadmin
+    container_name: chat_phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: mysql
+    ports:
+      - "8080:80"
+    depends_on:
+      - mysql
+
+volumes:
+  mysql_data:
