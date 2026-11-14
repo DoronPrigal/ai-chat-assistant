@@ -1,0 +1,6 @@
+# הבנייה צריכה רק את requirements.txt. לא שולחים לדוקר סודות, סביבה וירטואלית ותמונות.
+.env
+env/
+venv/
+__pycache__/
+uploads/

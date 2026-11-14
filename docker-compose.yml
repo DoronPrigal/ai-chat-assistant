@@ -1,4 +1,5 @@
-# MySQL ו-phpMyAdmin לפיתוח מקומי בלבד. ה-API וה-Frontend רצים בלי Docker.
+# MySQL ו-phpMyAdmin לפיתוח מקומי.
+# השירות api (ה-Backend) הוא חלופה להרצה הרגילה, ועולה רק עם: docker compose --profile api up -d
 services:
   mysql:
     image: mysql:8.0
@@ -12,6 +13,12 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    # ה-api מחכה עד ש-MySQL מוכן לחיבורים (בהרצה הראשונה זה לוקח כחצי דקה)
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-pchat_root_pass"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
   phpmyadmin:
     image: phpmyadmin
@@ -23,6 +30,24 @@ services:
       - "8080:80"
     depends_on:
       - mysql
+
+  api:
+    build: ./Backend
+    container_name: chat_api
+    restart: unless-stopped
+    profiles: ["api"]
+    env_file: ./Backend/.env
+    environment:
+      DB_HOST: mysql   # בתוך דוקר מתחברים לשם השירות, ולא ל-localhost שב-.env
+      DB_PORT: "3306"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./Backend:/app   # הקוד ותיקיית uploads מהמחשב. שינוי בקוד נטען מחדש (--reload)
+      - /app/env         # מסתיר את הסביבה הווירטואלית של Windows מתוך הקונטיינר
+    depends_on:
+      mysql:
+        condition: service_healthy
 
 volumes:
   mysql_data:

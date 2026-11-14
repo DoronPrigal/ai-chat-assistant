@@ -22,7 +22,7 @@ DoronPrigal/
 ├── Backend/            FastAPI app, LangGraph agent, requirements.txt, Postman collection (planned)
 ├── Frontend/           React app
 ├── Database/           MySQL export – db_export.sql (planned)
-└── docker-compose.yml  MySQL + phpMyAdmin only
+└── docker-compose.yml  MySQL + phpMyAdmin (+ an optional Backend service, see below)
 ```
 
 ## Getting started (Windows / PowerShell)
@@ -62,6 +62,19 @@ If PowerShell blocks `activate`, run once: `Set-ExecutionPolicy -Scope CurrentUs
 
 The API runs on http://localhost:8000. Tables are created automatically on first run.
 Interactive docs: http://localhost:8000/docs
+
+#### Alternative: run the Backend in Docker
+
+Use this instead of the steps above if Python cannot run locally (for example, when Windows Smart App Control blocks a library DLL). You still need `Backend/.env` (`copy .env.example .env` and fill it in as above).
+
+```powershell
+docker compose --profile api up -d --build
+```
+
+- This starts MySQL, phpMyAdmin and the API (`chat_api`) on http://localhost:8000. Without `--profile api`, `docker compose up -d` starts only the database, as in step 1.
+- The `Backend` folder is mounted into the container, so code changes reload automatically, and images stay in `Backend/uploads`.
+- Inside Docker the API connects to the `mysql` service, so `docker-compose.yml` overrides `DB_HOST` – no change to `.env` is needed.
+- Logs: `docker logs -f chat_api`. After changing `requirements.txt`, run the command again (`--build`).
 
 ### 3. Frontend
 
