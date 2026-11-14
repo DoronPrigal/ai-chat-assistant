@@ -10,7 +10,7 @@ from db.database import get_db  # noqa: E402
 
 # הקידומות של משתמשי הבדיקה בסקריפטים
 TEST_PREFIXES = ["test_", "e2e_", "ui_", "img_", "polish_", "axe_", "bonus_", "stream_", "sbad_", "scroll_",
-                 "resp_", "flash_", "wx_", "fix_", "rev_"]
+                 "resp_", "flash_", "wx_", "fix_", "rev_", "postman_"]
 
 conn = get_db()
 cursor = conn.cursor()

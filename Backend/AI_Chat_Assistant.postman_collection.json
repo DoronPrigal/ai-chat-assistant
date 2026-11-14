@@ -1,0 +1,560 @@
+{
+  "info": {
+    "name": "AI Chat Assistant API",
+    "description": "All endpoints of the AI Chat Assistant (FastAPI).\n\nHow to use:\n1. Start MySQL and the Backend (see README.md). The API runs on {{baseUrl}}.\n2. Run the requests in order, or run the whole collection (Run collection). Register / Login save the JWT in the `token` variable, and the next requests use it automatically (Authorization: Bearer {{token}}).\n3. Create conversation saves `conversationId`, and Upload image saves `imagePath`.\n4. Upload image: in the Body tab, choose any PNG / JPEG / WebP / GIF file (up to 5 MB).\n\nRegister creates a new user each run (postman_<time>). To use your own account, set `username` and `password` in the collection variables and run Login.\n\nStreaming endpoints return NDJSON (one JSON event per line): tool, token, done or error. Postman shows the full response when the stream ends.\n\nThe request \"Generate an image\" calls the image model and costs about half a cent.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8000" },
+    { "key": "username", "value": "" },
+    { "key": "password", "value": "postman-pass-1" },
+    { "key": "token", "value": "" },
+    { "key": "conversationId", "value": "" },
+    { "key": "streamConversationId", "value": "" },
+    { "key": "imagePath", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health check (server + database)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": "{{baseUrl}}/api/health",
+            "description": "Returns {\"status\": \"ok\", \"database\": \"connected\"}, or 503 if MySQL is not available."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 and database connected', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().database).to.eql('connected');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}" },
+            "url": "{{baseUrl}}/api/auth/register",
+            "description": "Creates a user and returns a JWT (the user is logged in right away).\nUsername: 3-30 characters (letters, digits, . _ -). Password: at least 6 characters, up to 72 bytes.\nThe pre-request script picks a new username (postman_<time>) each run."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.collectionVariables.set('username', 'postman_' + Date.now());"]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created with a token', () => {",
+                  "    pm.response.to.have.status(201);",
+                  "    pm.expect(pm.response.json().access_token).to.be.a('string');",
+                  "});",
+                  "pm.collectionVariables.set('token', pm.response.json().access_token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}" },
+            "url": "{{baseUrl}}/api/auth/login",
+            "description": "Returns a JWT (valid for 7 days) and saves it in the `token` variable."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with a token', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().token_type).to.eql('bearer');",
+                  "});",
+                  "pm.collectionVariables.set('token', pm.response.json().access_token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Me (logged-in user)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/me",
+            "description": "The user of the token."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 and the same username', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().username).to.eql(pm.collectionVariables.get('username'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Conversations",
+      "item": [
+        {
+          "name": "Create conversation (first message)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"content\": \"Tell me a one-liner programming joke\"\n}" },
+            "url": "{{baseUrl}}/api/conversations",
+            "description": "Starts a new conversation with its first message. The conversation is created only after the agent answers, and its title comes from the first message.\nSaves the new id in `conversationId`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('201 with the conversation and both messages', () => {",
+                  "    pm.response.to.have.status(201);",
+                  "    pm.expect(body.user_message.role).to.eql('user');",
+                  "    pm.expect(body.assistant_message.role).to.eql('assistant');",
+                  "    pm.expect(body.assistant_message.conversation_id).to.eql(body.conversation.id);",
+                  "});",
+                  "pm.collectionVariables.set('conversationId', body.conversation.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Send message (same context)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"content\": \"Still a one-liner, but change the subject\"\n}" },
+            "url": "{{baseUrl}}/api/conversations/{{conversationId}}/messages",
+            "description": "Continues the conversation. The agent gets the last 20 messages from the database, so it answers in the same context."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with the user message and the reply', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().assistant_message.content).to.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Send message (weather tool)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"content\": \"מה מזג האוויר עכשיו בתל אביב?\"\n}" },
+            "url": "{{baseUrl}}/api/conversations/{{conversationId}}/messages",
+            "description": "The agent calls the get_weather tool (Open-Meteo, free) and answers in the user's language."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with an answer', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().assistant_message.content).to.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List conversations",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/conversations",
+            "description": "The logged-in user's conversations, newest first."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 and includes the new conversation', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const ids = pm.response.json().map((c) => c.id);",
+                  "    pm.expect(ids).to.include(Number(pm.collectionVariables.get('conversationId')));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get conversation with messages",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/conversations/{{conversationId}}",
+            "description": "One conversation with all its messages. Each message has a role (user / assistant) and the conversation id."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with 6 messages in order', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const roles = pm.response.json().messages.map((m) => m.role);",
+                  "    pm.expect(roles).to.eql(['user', 'assistant', 'user', 'assistant', 'user', 'assistant']);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Images",
+      "item": [
+        {
+          "name": "Upload image",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "file", "type": "file", "src": "sample.png" }]
+            },
+            "url": "{{baseUrl}}/api/uploads",
+            "description": "Choose an image file in the Body tab (PNG, JPEG, WebP or GIF, up to 5 MB). The type is checked by the file content, not by its name.\nReturns the image_path and saves it in `imagePath`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 with image_path', () => {",
+                  "    pm.response.to.have.status(201);",
+                  "    pm.expect(pm.response.json().image_path).to.match(/^\\/uploads\\//);",
+                  "});",
+                  "pm.collectionVariables.set('imagePath', pm.response.json().image_path);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get image file",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": "{{baseUrl}}{{imagePath}}",
+            "description": "The image file itself. Served without a token (an <img> tag cannot send one), at a random, unguessable name."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 image', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.match(/^image\\//);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Send message with image (vision)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"content\": \"What do you see in this image?\",\n  \"image_path\": \"{{imagePath}}\"\n}" },
+            "url": "{{baseUrl}}/api/conversations/{{conversationId}}/messages",
+            "description": "Text and an uploaded image together. The agent sees the image (vision). content can also be empty when image_path is sent."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('200 and the user message keeps the image', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(body.user_message.image_path).to.eql(pm.collectionVariables.get('imagePath'));",
+                  "    pm.expect(body.assistant_message.content).to.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Image generation (optional, costs ~$0.005)",
+      "item": [
+        {
+          "name": "Generate an image",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"content\": \"Draw a small red bicycle\"\n}" },
+            "url": "{{baseUrl}}/api/conversations/{{conversationId}}/messages",
+            "description": "The agent calls the generate_image tool. The new image is in assistant_message.image_path. Costs about half a cent."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 and the answer has an image', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().assistant_message.image_path).to.match(/^\\/uploads\\//);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Streaming (NDJSON)",
+      "item": [
+        {
+          "name": "Create conversation (stream)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"content\": \"Write a haiku about coffee\"\n}" },
+            "url": "{{baseUrl}}/api/conversations/stream",
+            "description": "Like Create conversation, but the answer is streamed word by word, one JSON event per line:\n- {\"type\": \"tool\", \"name\": \"...\"} – the agent calls a tool\n- {\"type\": \"token\", \"text\": \"...\"} – the next piece of the answer\n- {\"type\": \"done\", \"conversation\": {...}, \"user_message\": {...}, \"assistant_message\": {...}} – saved\n- {\"type\": \"error\", \"message\": \"...\"} – nothing was saved\nSaves the new id in `streamConversationId`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const events = pm.response.text().trim().split('\\n').map((line) => JSON.parse(line));",
+                  "const done = events[events.length - 1];",
+                  "pm.test('200, tokens and a done event', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(events.some((e) => e.type === 'token')).to.be.true;",
+                  "    pm.expect(done.type).to.eql('done');",
+                  "});",
+                  "pm.test('saved answer = streamed text', () => {",
+                  "    const streamed = events.filter((e) => e.type === 'token').map((e) => e.text).join('');",
+                  "    pm.expect(done.assistant_message.content).to.eql(streamed);",
+                  "});",
+                  "pm.collectionVariables.set('streamConversationId', done.conversation.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Send message (stream)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"content\": \"Now translate it to Hebrew\"\n}" },
+            "url": "{{baseUrl}}/api/conversations/{{streamConversationId}}/messages/stream",
+            "description": "Continues a conversation with a streamed answer (same events, done has no conversation)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const events = pm.response.text().trim().split('\\n').map((line) => JSON.parse(line));",
+                  "pm.test('200 and ends with done', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(events[events.length - 1].type).to.eql('done');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Errors and security",
+      "item": [
+        {
+          "name": "No token -> 401",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": "{{baseUrl}}/api/conversations"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": ["pm.test('401', () => pm.response.to.have.status(401));"] }
+            }
+          ]
+        },
+        {
+          "name": "Wrong password -> 401",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"wrong-password\"\n}" },
+            "url": "{{baseUrl}}/api/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": ["pm.test('401', () => pm.response.to.have.status(401));"] }
+            }
+          ]
+        },
+        {
+          "name": "Missing conversation -> 404",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/conversations/999999999",
+            "description": "Another user's conversation returns the same 404, so it is not possible to know that it exists."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": ["pm.test('404', () => pm.response.to.have.status(404));"] }
+            }
+          ]
+        },
+        {
+          "name": "Empty message -> 422",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"content\": \"   \"\n}" },
+            "url": "{{baseUrl}}/api/conversations/{{conversationId}}/messages"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": ["pm.test('422', () => pm.response.to.have.status(422));"] }
+            }
+          ]
+        },
+        {
+          "name": "Invalid image_path -> 422",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"content\": \"Hi\",\n  \"image_path\": \"/uploads/../.env\"\n}" },
+            "url": "{{baseUrl}}/api/conversations/{{conversationId}}/messages",
+            "description": "Only image paths that the server created itself are accepted (prevents path traversal)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": ["pm.test('422', () => pm.response.to.have.status(422));"] }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Cleanup",
+      "item": [
+        {
+          "name": "Delete conversation",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/conversations/{{conversationId}}",
+            "description": "Deletes the conversation, its messages (ON DELETE CASCADE) and its image files. Returns 204."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": ["pm.test('204', () => pm.response.to.have.status(204));"] }
+            }
+          ]
+        },
+        {
+          "name": "Delete streamed conversation",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/conversations/{{streamConversationId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": ["pm.test('204', () => pm.response.to.have.status(204));"] }
+            }
+          ]
+        },
+        {
+          "name": "Deleted conversation -> 404",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/conversations/{{conversationId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": ["pm.test('404', () => pm.response.to.have.status(404));"] }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

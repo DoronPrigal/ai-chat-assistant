@@ -19,7 +19,7 @@ Final project – Full Stack Web Developer course, John Bryce.
 
 ```
 DoronPrigal/
-├── Backend/            FastAPI app, LangGraph agent, requirements.txt, Postman collection (planned)
+├── Backend/            FastAPI app, LangGraph agent, requirements.txt, Postman collection
 ├── Frontend/           React app
 ├── Database/           MySQL export – db_export.sql (planned)
 └── docker-compose.yml  MySQL + phpMyAdmin (+ an optional Backend service, see below)
@@ -105,6 +105,14 @@ All `/api/conversations` and `/api/uploads` endpoints require `Authorization: Be
 | DELETE | `/api/conversations/{id}` | Delete a conversation, its messages and its image files |
 | POST | `/api/uploads` | Upload an image (PNG, JPEG, WebP or GIF, up to 5 MB), returns its `image_path` |
 | GET | `/uploads/{file}` | The image file itself (random, unguessable file names) |
+
+### Postman
+
+`Backend/AI_Chat_Assistant.postman_collection.json` covers every endpoint, including streaming, image upload and error cases (401 / 404 / 422). Import it into Postman and run the requests in order (or **Run collection**):
+- **Register** / **Login** save the JWT in the `token` variable, and all other requests send it automatically (Bearer).
+- **Create conversation** saves `conversationId`, and **Upload image** saves `imagePath` (choose an image file in its Body tab).
+- Each request has tests that check the response.
+- The **Image generation** folder is optional: it calls the image model (about half a cent).
 
 ## The AI agent
 
