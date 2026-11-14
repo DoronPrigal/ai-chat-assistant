@@ -35,7 +35,6 @@ export default function AboutPage() {
           <p>{aboutMe.bio}</p>
           <div className="me-links">
             <a className="button-secondary" href={aboutMe.githubUrl} target="_blank" rel="noreferrer">GitHub</a>
-            <a className="button-secondary" href={aboutMe.linkedinUrl} target="_blank" rel="noreferrer">LinkedIn</a>
           </div>
         </section>
 

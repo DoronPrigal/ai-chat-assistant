@@ -2,8 +2,7 @@
 export const aboutMe = {
   name: "Doron Prigal",
   role: "Full Stack Web Developer student · John Bryce",
-  bio: "Temporary text: a short sentence about my background, what I love building, and what I'm looking for next.",
+  bio: "Full Stack developer in training at John Bryce, building web apps with Python, FastAPI, React and AI agents. I enjoy turning ideas into clean, accessible products.",
   githubUrl: "https://github.com/DoronPrigal",
-  linkedinUrl: "https://www.linkedin.com/in/your-profile",
   repoUrl: "https://github.com/DoronPrigal/ai-chat-assistant",
 };

@@ -6,6 +6,20 @@ Final project – Full Stack Web Developer course, John Bryce.
 
 **GitHub:** https://github.com/DoronPrigal/ai-chat-assistant
 
+**Demo user:** `demo` / `demo1234` – available after importing the sample data (see [Sample data](#sample-data-optional)). It has 4 conversations: English with code, Hebrew, weather, and a generated image. You can also register a new account.
+
+## Screenshots
+
+| Chat (light) | Hebrew + weather (dark) |
+|---|---|
+| ![Chat with a code answer, light mode](docs/screenshots/chat-light.png) | ![Hebrew conversation about the weather, dark mode](docs/screenshots/chat-dark-hebrew.png) |
+| **Image generation** | **New chat** |
+| ![The agent drew a seaside café](docs/screenshots/image-generation.png) | ![Empty state with suggestions](docs/screenshots/new-chat.png) |
+
+| About | Mobile | Mobile drawer |
+|---|---|---|
+| ![About page, bento grid](docs/screenshots/about.png) | ![Hebrew conversation on mobile](docs/screenshots/mobile-chat.png) | ![Conversation list as a drawer on mobile](docs/screenshots/mobile-drawer.png) |
+
 ## Tech stack
 
 | Layer | Technology |
@@ -19,11 +33,13 @@ Final project – Full Stack Web Developer course, John Bryce.
 
 ```
 DoronPrigal/
-├── Backend/            FastAPI app, LangGraph agent, requirements.txt, Postman collection
+├── Backend/            FastAPI app, LangGraph agent, requirements.txt, Postman collection (+ postman/sample.png)
 ├── Frontend/           React app
-├── Database/           MySQL export – db_export.sql (planned)
+├── Database/           MySQL export – db_export.sql (structure + sample data)
 └── docker-compose.yml  MySQL + phpMyAdmin (+ an optional Backend service, see below)
 ```
+
+The test scripts used during development (Playwright, API tests) are in the [`tests/`](https://github.com/DoronPrigal/ai-chat-assistant/tree/main/tests) folder on GitHub. They are not part of the submitted ZIP.
 
 ## Getting started (Windows / PowerShell)
 
@@ -41,6 +57,22 @@ On the very first run MySQL needs about 20–30 seconds to initialize. Wait for 
 - phpMyAdmin: http://localhost:8080 (user `root`, password from `docker-compose.yml`)
 
 If you ran an older version of the project before, reset the database so the tables are created with the current structure: `docker compose down -v` and then `docker compose up -d` (this deletes all local data).
+
+**Without Docker:** any local MySQL 8 works too. Create a database named `chat_db` (utf8mb4) and set `DB_HOST`, `DB_PORT`, `DB_USER` and `DB_PASSWORD` in `Backend/.env` (step 2).
+
+#### Sample data (optional)
+
+`Database/db_export.sql` contains the tables and the demo user (`demo` / `demo1234`) with 4 conversations. Its image is in `Backend/uploads`. Import it once MySQL is running – **this replaces the existing tables**:
+
+- **phpMyAdmin:** http://localhost:8080 → Import → choose `Database/db_export.sql` → Import.
+- **Or from PowerShell** (in the project folder):
+  ```powershell
+  docker cp Database/db_export.sql chat_mysql:/tmp/db_export.sql
+  docker exec chat_mysql sh -c "mysql -uroot -pchat_root_pass < /tmp/db_export.sql"
+  ```
+- **Local MySQL without Docker:** `mysql -u root -p < Database/db_export.sql` (in cmd, or MySQL Workbench → Run SQL Script).
+
+Without the import, the Backend creates empty tables on its first run.
 
 ### 2. Backend
 
@@ -110,7 +142,10 @@ All `/api/conversations` and `/api/uploads` endpoints require `Authorization: Be
 
 `Backend/AI_Chat_Assistant.postman_collection.json` covers every endpoint, including streaming, image upload and error cases (401 / 404 / 422). Import it into Postman and run the requests in order (or **Run collection**):
 - **Register** / **Login** save the JWT in the `token` variable, and all other requests send it automatically (Bearer).
-- **Create conversation** saves `conversationId`, and **Upload image** saves `imagePath`. Before sending it, choose an image file in its Body tab (for example `tests/fixtures/sample.png`).
+- **Create conversation** saves `conversationId`, and **Upload image** saves `imagePath`.
+- **Upload image needs a file.** A sample image is included: `Backend/postman/sample.png`. Choose it in one of two ways:
+  - In the request **Upload image** → **Body** tab → the `file` row → **Select files** → choose `Backend/postman/sample.png`. Save the request (Ctrl+S) so Run collection uses it too.
+  - Or copy `sample.png` to Postman's working directory, `C:\Users\<your user name>\Postman\files` (Settings → General → Working directory). The collection already points to `sample.png`, so it is found automatically.
 - **Errors and security** registers a second user and checks that it gets 404 for the first user's conversation.
 - Each request has tests that check the response.
 - **Generate an image** costs about half a cent, so it is skipped unless you set the collection variable `runImageGeneration` to `true`.
