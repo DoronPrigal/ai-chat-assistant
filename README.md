@@ -110,9 +110,10 @@ All `/api/conversations` and `/api/uploads` endpoints require `Authorization: Be
 
 `Backend/AI_Chat_Assistant.postman_collection.json` covers every endpoint, including streaming, image upload and error cases (401 / 404 / 422). Import it into Postman and run the requests in order (or **Run collection**):
 - **Register** / **Login** save the JWT in the `token` variable, and all other requests send it automatically (Bearer).
-- **Create conversation** saves `conversationId`, and **Upload image** saves `imagePath` (choose an image file in its Body tab).
+- **Create conversation** saves `conversationId`, and **Upload image** saves `imagePath`. Before sending it, choose an image file in its Body tab (for example `tests/fixtures/sample.png`).
+- **Errors and security** registers a second user and checks that it gets 404 for the first user's conversation.
 - Each request has tests that check the response.
-- The **Image generation** folder is optional: it calls the image model (about half a cent).
+- **Generate an image** costs about half a cent, so it is skipped unless you set the collection variable `runImageGeneration` to `true`.
 
 ## The AI agent
 

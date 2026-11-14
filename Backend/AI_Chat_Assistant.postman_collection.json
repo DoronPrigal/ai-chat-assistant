@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "AI Chat Assistant API",
-    "description": "All endpoints of the AI Chat Assistant (FastAPI).\n\nHow to use:\n1. Start MySQL and the Backend (see README.md). The API runs on {{baseUrl}}.\n2. Run the requests in order, or run the whole collection (Run collection). Register / Login save the JWT in the `token` variable, and the next requests use it automatically (Authorization: Bearer {{token}}).\n3. Create conversation saves `conversationId`, and Upload image saves `imagePath`.\n4. Upload image: in the Body tab, choose any PNG / JPEG / WebP / GIF file (up to 5 MB).\n\nRegister creates a new user each run (postman_<time>). To use your own account, set `username` and `password` in the collection variables and run Login.\n\nStreaming endpoints return NDJSON (one JSON event per line): tool, token, done or error. Postman shows the full response when the stream ends.\n\nThe request \"Generate an image\" calls the image model and costs about half a cent.",
+    "description": "All endpoints of the AI Chat Assistant (FastAPI).\n\nHow to use:\n1. Start MySQL and the Backend (see README.md). The API runs on {{baseUrl}}.\n2. Run the requests in order, or run the whole collection (Run collection). Register / Login save the JWT in the `token` variable, and the next requests use it automatically (Authorization: Bearer {{token}}).\n3. Create conversation saves `conversationId`, and Upload image saves `imagePath`.\n4. Upload image: in the Body tab, choose an image file first (for example tests/fixtures/sample.png, or any PNG / JPEG / WebP / GIF up to 5 MB).\n5. The folder \"Errors and security\" registers a second user and checks that it cannot reach the first user's conversation (404).\n\nRegister creates a new user each run (postman_<time>). To use your own account, set `username` and `password` in the collection variables and run Login.\n\nStreaming endpoints return NDJSON (one JSON event per line): tool, token, done or error. Postman shows the full response when the stream ends.\n\nThe request \"Generate an image\" calls the image model and costs about half a cent, so it is skipped unless the collection variable `runImageGeneration` is set to `true`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -15,7 +15,9 @@
     { "key": "token", "value": "" },
     { "key": "conversationId", "value": "" },
     { "key": "streamConversationId", "value": "" },
-    { "key": "imagePath", "value": "" }
+    { "key": "imagePath", "value": "" },
+    { "key": "token2", "value": "" },
+    { "key": "runImageGeneration", "value": "false" }
   ],
   "item": [
     {
@@ -271,7 +273,7 @@
               "formdata": [{ "key": "file", "type": "file", "src": "sample.png" }]
             },
             "url": "{{baseUrl}}/api/uploads",
-            "description": "Choose an image file in the Body tab (PNG, JPEG, WebP or GIF, up to 5 MB). The type is checked by the file content, not by its name.\nReturns the image_path and saves it in `imagePath`."
+            "description": "**Before sending: choose an image file in the Body tab** (the `file` field). You can use `tests/fixtures/sample.png` from the project, or any PNG, JPEG, WebP or GIF up to 5 MB. The type is checked by the file content, not by its name.\nReturns the image_path and saves it in `imagePath` (used by the next two requests)."
           },
           "event": [
             {
@@ -279,11 +281,13 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('201 with image_path', () => {",
+                  "pm.test('201 with image_path (if it failed: choose a file in the Body tab)', () => {",
                   "    pm.response.to.have.status(201);",
                   "    pm.expect(pm.response.json().image_path).to.match(/^\\/uploads\\//);",
                   "});",
-                  "pm.collectionVariables.set('imagePath', pm.response.json().image_path);"
+                  "if (pm.response.code === 201) {",
+                  "    pm.collectionVariables.set('imagePath', pm.response.json().image_path);",
+                  "}"
                 ]
               }
             }
@@ -350,9 +354,22 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": { "mode": "raw", "raw": "{\n  \"content\": \"Draw a small red bicycle\"\n}" },
             "url": "{{baseUrl}}/api/conversations/{{conversationId}}/messages",
-            "description": "The agent calls the generate_image tool. The new image is in assistant_message.image_path. Costs about half a cent."
+            "description": "The agent calls the generate_image tool. The new image is in assistant_message.image_path. Costs about half a cent.\n**Skipped by default.** To run it, set the collection variable `runImageGeneration` to `true`."
           },
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// יצירת תמונה עולה כסף, אז היא רצה רק כשמבקשים במפורש",
+                  "if (pm.collectionVariables.get('runImageGeneration') !== 'true') {",
+                  "    console.log('Skipped: set runImageGeneration to true to generate an image');",
+                  "    pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
@@ -461,6 +478,96 @@
             {
               "listen": "test",
               "script": { "type": "text/javascript", "exec": ["pm.test('401', () => pm.response.to.have.status(401));"] }
+            }
+          ]
+        },
+        {
+          "name": "Register a second user",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"postman_b_{{$timestamp}}\",\n  \"password\": \"postman-pass-2\"\n}" },
+            "url": "{{baseUrl}}/api/auth/register",
+            "description": "A second user, to check that one user cannot reach another user's conversation. Saves the token in `token2`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('token2', pm.response.json().access_token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Other user's conversation -> 404",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token2}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/api/conversations/{{conversationId}}",
+            "description": "The second user asks for the first user's conversation. 404, the same as a conversation that does not exist."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": ["pm.test('404', () => pm.response.to.have.status(404));"] }
+            }
+          ]
+        },
+        {
+          "name": "Other user sends a message -> 404",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token2}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"content\": \"Hi\"\n}" },
+            "url": "{{baseUrl}}/api/conversations/{{conversationId}}/messages"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": ["pm.test('404', () => pm.response.to.have.status(404));"] }
+            }
+          ]
+        },
+        {
+          "name": "Other user deletes the conversation -> 404",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token2}}", "type": "string" }] },
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/conversations/{{conversationId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": ["pm.test('404', () => pm.response.to.have.status(404));"] }
+            }
+          ]
+        },
+        {
+          "name": "Other user's list does not include it",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token2}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/api/conversations"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 and an empty list', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json()).to.eql([]);",
+                  "});"
+                ]
+              }
             }
           ]
         },
