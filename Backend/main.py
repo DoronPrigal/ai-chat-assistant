@@ -56,9 +56,11 @@ def health():
         conn = get_db()
     except mysql.connector.Error:
         raise HTTPException(status_code=503, detail="The database is not available")
-    cursor = conn.cursor()
-    cursor.execute("SELECT 1")
-    cursor.fetchone()
-    cursor.close()
-    conn.close()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1")
+        cursor.fetchone()
+        cursor.close()
+    finally:
+        conn.close()
     return {"status": "ok", "database": "connected"}

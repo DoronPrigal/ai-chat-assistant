@@ -64,7 +64,7 @@ def create_and_save(user_id, body, reply, generated_image):
     return conversation, user_message, assistant_message
 
 
-# ===== Streaming =====
+# ===== הזרמת התשובה (Streaming) =====
 
 def json_line(data):
     """אירוע אחד בשורה אחת (NDJSON): הדפדפן קורא את התשובה שורה אחר שורה."""
@@ -97,7 +97,7 @@ def stream_events(history, body, save):
         events.close()  # אם המשתמש סגר את הדף באמצע: עוצר את הסוכן ומנקה תמונות שלא יישמרו
 
 
-# ===== Endpoints =====
+# ===== נקודות הקצה (Endpoints) =====
 
 @router.get("", response_model=list[ConversationOut])
 def list_conversations(user: dict = Depends(get_current_user)):

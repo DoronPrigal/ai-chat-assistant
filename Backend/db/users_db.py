@@ -9,15 +9,15 @@ def create_user(username, password_hash):
     try:
         cursor.execute("INSERT INTO users (username, password_hash) VALUES (%s, %s)", (username, password_hash))
         conn.commit()
+        cursor.execute("SELECT id, username, created_at FROM users WHERE id = %s", (cursor.lastrowid,))
+        user = cursor.fetchone()
     except mysql.connector.IntegrityError:
         # username מוגדר UNIQUE, אז MySQL עצמו מונע כפילות
+        raise HTTPException(status_code=409, detail="This username is already taken")
+    finally:
+        # החיבור נסגר תמיד, גם בשגיאה לא צפויה
         cursor.close()
         conn.close()
-        raise HTTPException(status_code=409, detail="This username is already taken")
-    cursor.execute("SELECT id, username, created_at FROM users WHERE id = %s", (cursor.lastrowid,))
-    user = cursor.fetchone()
-    cursor.close()
-    conn.close()
     return user
 
 

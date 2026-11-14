@@ -60,15 +60,14 @@ def add_exchange(conversation_id, user_content, user_image, reply, reply_image):
         reply_id = cursor.lastrowid
         cursor.execute("UPDATE conversations SET updated_at = NOW() WHERE id = %s", (conversation_id,))
         conn.commit()
+        cursor.execute("SELECT * FROM messages WHERE id IN (%s, %s) ORDER BY id", (user_message_id, reply_id))
+        user_message, reply_message = cursor.fetchall()
     except mysql.connector.IntegrityError:
         # השיחה נמחקה בזמן שהסוכן ענה (המפתח הזר כבר לא קיים)
         conn.rollback()
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    finally:
+        # החיבור נסגר תמיד, גם בשגיאה לא צפויה
         cursor.close()
         conn.close()
-        raise HTTPException(status_code=404, detail="Conversation not found")
-
-    cursor.execute("SELECT * FROM messages WHERE id IN (%s, %s) ORDER BY id", (user_message_id, reply_id))
-    user_message, reply_message = cursor.fetchall()
-    cursor.close()
-    conn.close()
     return user_message, reply_message

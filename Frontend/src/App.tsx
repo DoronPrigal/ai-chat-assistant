@@ -171,7 +171,8 @@ export default function App() {
         />
       )}
 
-      <main id="main" className="main" tabIndex={-1}>
+      {/* כשהמגירה פתוחה בנייד, התוכן שמאחוריה לא נגיש (Tab נשאר בתוך המגירה ובכותרת) */}
+      <main id="main" className="main" tabIndex={-1} inert={isMobile && sidebarOpen}>
         <Routes>
           <Route path="/" element={chatPage} />
           <Route path="/c/:id" element={chatPage} />

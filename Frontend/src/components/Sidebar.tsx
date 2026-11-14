@@ -81,7 +81,8 @@ export default function Sidebar({ open, isMobile, conversations, error, onRetry,
               </button>
             </li>
           ))}
-        </ul>      </aside>
+        </ul>
+      </aside>
     </>
   );
 }
