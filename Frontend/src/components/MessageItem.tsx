@@ -23,13 +23,16 @@ export default function MessageItem({ message }: { message: Message }) {
     <article className={`message ${isUser ? "message-user" : "message-assistant"}${message.id < 0 ? " message-new" : ""}`}>
       <span className="visually-hidden">{isUser ? "You said:" : "Assistant said:"}</span>
 
-      {/* תמונה שהמשתמש צירף או שהסוכן יצר. לחיצה פותחת אותה בגודל מלא. */}
+      {/* תמונה שהמשתמש צירף או שהסוכן יצר. לחיצה פותחת אותה בגודל מלא.
+          תמונה שהסוכן יצר היא תמיד 1024x1024, אז width ו-height שומרים לה מקום עוד לפני שנטענה */}
       {message.image_path && (
         <a href={imageUrl(message.image_path)} target="_blank" rel="noreferrer" className="message-image-link">
           <img
             src={imageUrl(message.image_path)}
             alt={isUser ? "Image you attached (opens full size)" : "Image created by the assistant (opens full size)"}
             className={isUser ? "message-image" : "message-image message-image-generated"}
+            width={isUser ? undefined : 1024}
+            height={isUser ? undefined : 1024}
             loading="lazy"
           />
         </a>

@@ -69,9 +69,14 @@ export default function ChatPage({ onConversationsChanged }: Props) {
 
   // כשגובה הדף משתנה (שורת ההקלדה גדלה, תמונה צורפה או נטענה) ומי שהיה בסוף - נשאר בסוף
   useEffect(() => {
+    let lastScrollY = window.scrollY;
     function handleScroll() {
       const root = document.documentElement;
-      isAtBottom.current = window.innerHeight + window.scrollY >= root.scrollHeight - 80;
+      const nearBottom = window.innerHeight + window.scrollY >= root.scrollHeight - 80;
+      // יוצאים ממצב "בסוף" רק כשהמשתמש גלל למעלה. אם רק הדף גדל (למשל תמונה נטענה), נשארים בסוף.
+      const scrolledUp = window.scrollY < lastScrollY;
+      isAtBottom.current = nearBottom || (isAtBottom.current && !scrolledUp);
+      lastScrollY = window.scrollY;
     }
     const observer = new ResizeObserver(() => {
       if (isAtBottom.current) scrollToBottom();

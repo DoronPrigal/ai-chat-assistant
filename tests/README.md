@@ -35,6 +35,7 @@ Each script prints `PASS` / `FAIL` per check and `ALL PASSED` at the end. Screen
 | `fixes_ui.mjs <token> <id>` | Last message visible above the input bar, code is LTR. First run `python seed_long_chat.py` (prints the token and id) |
 | `drawer_logo.mjs <token>` | Mobile drawer close button position, logo colors |
 | `flash_test.mjs` | No re-animation when a streamed answer is saved |
+| `image_scroll.mjs` | A generated or attached image at the end of a chat is fully visible above the input (new chat, existing chat, reopen), desktop + 360px. Streaming is mocked in the browser – **no OpenAI cost** |
 | `responsive.mjs` | No horizontal scroll at 360–1440 px |
 | `axe_audit.mjs` | WCAG 2.1 AA (axe-core) on 18 screens, light + dark |
 | `images_ui.mjs` | Upload + vision, and **generates one real image (costs ~$0.005)** |

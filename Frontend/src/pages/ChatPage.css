@@ -294,6 +294,7 @@
   display: block;
   max-width: min(100%, 320px);
   max-height: 320px;
+  height: auto; /* עם width ו-height ב-HTML: הגובה נשמר לפי היחס, ולא 1024px */
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   object-fit: cover;
